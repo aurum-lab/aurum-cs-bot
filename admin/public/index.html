@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Aurum CS Bot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>🍞 Aurum CS Bot</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/" class="active">📊 Dashboard</a>
+        <a href="/products">🍞 Produk</a>
+        <a href="/templates">💬 Template</a>
+        <a href="/settings">⚙️ Setting</a>
+        <a href="/logs">📋 Log</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Ringkasan data Aurum CS Bot</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Total Produk</div>
+          <div class="value accent" id="totalProducts">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Percakapan</div>
+          <div class="value success" id="totalConversations">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Kategori</div>
+          <div class="value warning" id="totalCategories">-</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Quick Actions</h3>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <a href="/products" class="btn btn-primary">+ Tambah Produk</a>
+          <a href="/templates" class="btn">Edit Template</a>
+          <a href="/settings" class="btn">Setting Bot</a>
+          <a href="/logs" class="btn">Lihat Log</a>
+        </div>
+      </div>
+
+      <!-- Recent Products -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Produk Terbaru</h3>
+          <a href="/products" class="btn btn-sm">Lihat Semua</a>
+        </div>
+        <div id="recentProducts" class="empty-state">
+          <div class="icon">🍞</div>
+          <p>Memuat data...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Load dashboard data
+    async function loadDashboard() {
+      try {
+        // Load products
+        const productsRes = await fetch('/api/products');
+        const products = await productsRes.json();
+        document.getElementById('totalProducts').textContent = products.length;
+        
+        // Count categories
+        const categories = [...new Set(products.map(p => p.category))];
+        document.getElementById('totalCategories').textContent = categories.length;
+        
+        // Recent products
+        const recent = products.slice(-5).reverse();
+        if (recent.length > 0) {
+          document.getElementById('recentProducts').innerHTML = recent.map(p => `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border);">
+              <img src="${p.image_url || 'https://via.placeholder.com/60'}" alt="${p.name}" class="product-img">
+              <div>
+                <div style="font-weight: 500;">${p.name}</div>
+                <div style="color: var(--text-secondary); font-size: 0.85rem;">Rp ${p.price.toLocaleString('id-ID')}</div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          document.getElementById('recentProducts').innerHTML = '<p>Belum ada produk</p>';
+        }
+        
+        // Load conversations
+        const logsRes = await fetch('/api/logs');
+        const logs = await logsRes.json();
+        document.getElementById('totalConversations').textContent = logs.length;
+        
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+      }
+    }
+    
+    loadDashboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log - Admin Panel</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>🍞 Aurum CS Bot</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/">📊 Dashboard</a>
+        <a href="/products">🍞 Produk</a>
+        <a href="/templates">💬 Template</a>
+        <a href="/settings">⚙️ Setting</a>
+        <a href="/logs" class="active">📋 Log</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="page-header">
+        <h2>Log Percakapan</h2>
+        <p>Riwayat percakapan yang sudah di-forward</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Riwayat</h3>
+          <button class="btn btn-sm" onclick="loadLogs()">🔄 Refresh</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Nama</th>
+                <th>No HP</th>
+                <th>Pesan</th>
+                <th>Respons</th>
+              </tr>
+            </thead>
+            <tbody id="logsTable">
+              <tr>
+                <td colspan="5" class="empty-state">Memuat data...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Load logs
+    async function loadLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        const logs = await res.json();
+        renderLogs(logs);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    // Render logs
+    function renderLogs(logs) {
+      const tbody = document.getElementById('logsTable');
+      if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="icon">📋</div><p>Belum ada percakapan</p></td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = logs.reverse().map(log => `
+        <tr>
+          <td>${new Date(log.timestamp).toLocaleString('id-ID')}</td>
+          <td>${log.customer_name || '-'}</td>
+          <td>${log.customer_phone}</td>
+          <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.message}</td>
+          <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.response}</td>
+        </tr>
+      `).join('');
+    }
+
+    loadLogs();
+  </script>
+</body>
+</html>

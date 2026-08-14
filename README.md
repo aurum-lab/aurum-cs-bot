@@ -5,18 +5,17 @@ WhatsApp Customer Service Agent untuk toko roti, powered by Aurum Brain AI.
 ## Fitur
 
 - 🤖 Auto-reply dengan AI (Aurum Brain)
-- 📋 Menu produk lengkap dengan harga
-- 🛒 Sistem pemesanan
-- 📦 Cek status pesanan
-- 💰 Informasi pembayaran
-- 💬 Conversational AI untuk bantuan
+- 📋 Menu produk lengkap dengan harga & foto
+- 💬 Forward inquiry ke CS asli
+- 🖼️ Tampilkan foto produk
+- ⚙️ Admin Panel untuk kelola bot
 
 ## Tech Stack
 
-- **WhatsApp**: whatsapp-web.js
+- **WhatsApp**: Baileys (support Termux/Android)
 - **AI**: Aurum Brain (Qwen2.5-3B) via Ollama
-- **Database**: SQLite
-- **Runtime**: Node.js
+- **Database**: SQLite (sql.js)
+- **Admin Panel**: Express.js + HTML/CSS
 
 ## Setup
 
@@ -33,6 +32,8 @@ ollama pull aurum-brain
 ### 2. Install Dependencies
 
 ```bash
+git clone https://github.com/aurum-lab/aurum-cs-bot.git
+cd aurum-cs-bot
 npm install
 ```
 
@@ -42,35 +43,49 @@ npm install
 npm run setup
 ```
 
-### 4. Start Bot
+### 4. Run WhatsApp Bot
 
 ```bash
 npm start
 ```
 
-### 5. Scan QR Code
+Scan QR Code dengan WhatsApp.
 
-Scan QR Code yang muncul di terminal dengan WhatsApp kamu.
+### 5. Run Admin Panel
 
-## Commands
+```bash
+npm run admin
+```
 
-| Command | Description |
-|---------|-------------|
+Buka http://localhost:2020 di browser.
+
+## Commands WhatsApp
+
+| Command | Fungsi |
+|---------|--------|
 | `menu` | Lihat daftar roti |
-| `order [nama]` | Pesan roti |
-| `cek` | Cek status pesanan |
-| `keranjang` | Lihat keranjang |
-| `bayar` | Bayar pesanan |
+| `[nama roti]` | Lihat detail & foto |
 | `bantuan` | Bantuan |
+
+## Admin Panel
+
+Akses: http://localhost:2020
+
+| Menu | Fungsi |
+|------|--------|
+| Dashboard | Statistik bot |
+| Produk | CRUD produk |
+| Template | Edit pesan |
+| Setting | Konfigurasi bot |
+| Log | Riwayat percakapan |
 
 ## Configuration
 
-Edit `config.js` untuk mengatur:
+Edit `config.js` atau via Admin Panel:
 
+- Nomor admin WhatsApp
 - URL Ollama server
-- Model yang digunakan
-- Nomor admin
-- Pesan bot
+- Model AI
 
 ## License
 

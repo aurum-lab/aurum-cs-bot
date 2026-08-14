@@ -21,26 +21,19 @@ app.use(express.static(join(__dirname, 'public')));
 // Initialize database
 await initDatabase();
 
-// Routes
+// API Routes
 app.use('/api/products', productsRouter);
 app.use('/api/templates', templatesRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/logs', logsRouter);
-
-// Serve index.html for all non-API routes
-app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(join(__dirname, 'public', 'index.html'));
-  }
-});
 
 // Start server
 app.listen(PORT, () => {
   console.log(`\n🔗 Admin Panel: http://localhost:${PORT}`);
   console.log(`\nMenu:`);
   console.log(`  Dashboard:  http://localhost:${PORT}/`);
-  console.log(`  Produk:     http://localhost:${PORT}/products`);
-  console.log(`  Template:   http://localhost:${PORT}/templates`);
-  console.log(`  Setting:    http://localhost:${PORT}/settings`);
-  console.log(`  Log:        http://localhost:${PORT}/logs`);
+  console.log(`  Produk:     http://localhost:${PORT}/products.html`);
+  console.log(`  Template:   http://localhost:${PORT}/templates.html`);
+  console.log(`  Setting:    http://localhost:${PORT}/settings.html`);
+  console.log(`  Log:        http://localhost:${PORT}/logs.html`);
 });

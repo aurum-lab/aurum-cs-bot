@@ -29,6 +29,51 @@
         <p>Ringkasan data Aurum CS Bot</p>
       </div>
 
+      <!-- WhatsApp Connection Card -->
+      <div class="card whatsapp-card">
+        <div class="card-header">
+          <h3>📱 WhatsApp Connection</h3>
+          <div class="wa-status" id="waStatus">
+            <span class="dot offline" id="waStatusDot"></span>
+            <span id="waStatusText">Disconnected</span>
+          </div>
+        </div>
+        <div class="wa-content">
+          <!-- QR Code Container -->
+          <div id="qrContainer" class="qr-container" style="display: none;">
+            <p>Scan QR Code dengan WhatsApp:</p>
+            <div class="qr-wrapper">
+              <img id="qrImage" src="" alt="QR Code">
+            </div>
+            <p class="qr-hint">📱 Buka WhatsApp → Settings → Linked Devices → Link a Device</p>
+          </div>
+          
+          <!-- Connection Info -->
+          <div id="connectionInfo" class="connection-info" style="display: none;">
+            <div class="connected-info">
+              <span class="check-icon">✅</span>
+              <span>Connected as: <strong id="phoneNumber">-</strong></span>
+            </div>
+          </div>
+          
+          <!-- Connect Button -->
+          <div class="wa-actions">
+            <button id="connectBtn" class="btn btn-primary" onclick="connectWhatsApp()">
+              🔗 Connect WhatsApp
+            </button>
+            <button id="disconnectBtn" class="btn btn-danger" onclick="disconnectWhatsApp()" style="display: none;">
+              ⏹️ Disconnect
+            </button>
+          </div>
+          
+          <!-- Ollama Status -->
+          <div class="ollama-status" id="ollamaStatus">
+            <span>AI (Ollama): </span>
+            <span id="ollamaStatusText">Checking...</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Stats -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -69,6 +114,18 @@
           <p>Memuat...</p>
         </div>
       </div>
+
+      <!-- Recent Messages -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Pesan Terbaru</h3>
+          <a href="/logs.html" class="btn btn-sm">Semua</a>
+        </div>
+        <div id="recentMessages" class="empty-state">
+          <div class="icon">💬</div>
+          <p>Belum ada pesan</p>
+        </div>
+      </div>
     </main>
 
     <!-- Tab Bar - Mobile -->
@@ -99,8 +156,145 @@
   </div>
 
   <script>
+    // WhatsApp SSE connection
+    let eventSource = null;
+
+    function connectSSE() {
+      if (eventSource) eventSource.close();
+      
+      eventSource = new EventSource('/api/whatsapp/events');
+      
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'status') {
+          updateStatus(data.data.status || data.data);
+        } else if (data.type === 'qr') {
+          updateQR(data.data);
+        } else if (data.type === 'ollama') {
+          updateOllamaStatus(data.data);
+        } else if (data.type === 'message') {
+          addRecentMessage(data.data);
+        }
+      };
+      
+      eventSource.onerror = () => {
+        console.log('SSE disconnected, reconnecting in 3s...');
+        setTimeout(connectSSE, 3000);
+      };
+    }
+
+    function updateStatus(status) {
+      const dot = document.getElementById('waStatusDot');
+      const text = document.getElementById('waStatusText');
+      const connectBtn = document.getElementById('connectBtn');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+      const qrContainer = document.getElementById('qrContainer');
+      const connectionInfo = document.getElementById('connectionInfo');
+      
+      text.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      
+      dot.className = 'dot';
+      
+      switch(status) {
+        case 'open':
+          dot.classList.add('online');
+          connectBtn.style.display = 'none';
+          disconnectBtn.style.display = 'inline-block';
+          qrContainer.style.display = 'none';
+          connectionInfo.style.display = 'block';
+          break;
+        case 'waiting_scan':
+          dot.classList.add('warning');
+          connectBtn.style.display = 'none';
+          disconnectBtn.style.display = 'inline-block';
+          qrContainer.style.display = 'block';
+          connectionInfo.style.display = 'none';
+          break;
+        case 'reconnecting':
+          dot.classList.add('warning');
+          connectBtn.style.display = 'none';
+          disconnectBtn.style.display = 'none';
+          qrContainer.style.display = 'none';
+          connectionInfo.style.display = 'none';
+          break;
+        default:
+          dot.classList.add('offline');
+          connectBtn.style.display = 'inline-block';
+          disconnectBtn.style.display = 'none';
+          qrContainer.style.display = 'none';
+          connectionInfo.style.display = 'none';
+      }
+    }
+
+    function updateQR(qrData) {
+      const qrImage = document.getElementById('qrImage');
+      if (qrData) {
+        qrImage.src = qrData;
+      } else {
+        qrImage.src = '';
+      }
+    }
+
+    function updateOllamaStatus(status) {
+      const text = document.getElementById('ollamaStatusText');
+      if (status.connected) {
+        text.innerHTML = '<span class="success">✅ Connected</span> - Models: ' + status.models.join(', ');
+      } else {
+        text.innerHTML = '<span class="error">❌ Not Connected</span>';
+      }
+    }
+
+    async function connectWhatsApp() {
+      try {
+        const res = await fetch('/api/whatsapp/connect', { method: 'POST' });
+        const data = await res.json();
+        if (!data.success) {
+          alert('Error: ' + data.message);
+        }
+      } catch (err) {
+        alert('Failed to connect: ' + err.message);
+      }
+    }
+
+    async function disconnectWhatsApp() {
+      if (!confirm('Disconnect WhatsApp?')) return;
+      
+      try {
+        await fetch('/api/whatsapp/disconnect', { method: 'POST' });
+      } catch (err) {
+        alert('Failed to disconnect: ' + err.message);
+      }
+    }
+
+    function addRecentMessage(msg) {
+      const container = document.getElementById('recentMessages');
+      
+      if (container.querySelector('.icon')) {
+        container.innerHTML = '';
+      }
+      
+      const div = document.createElement('div');
+      div.className = 'message-item';
+      div.innerHTML = `
+        <div class="message-header">
+          <strong>${msg.name}</strong>
+          <span class="phone">${msg.phone}</span>
+        </div>
+        <div class="message-text">${msg.text.substring(0, 100)}${msg.text.length > 100 ? '...' : ''}</div>
+      `;
+      
+      container.insertBefore(div, container.firstChild);
+      
+      // Keep only last 5 messages
+      while (container.children.length > 5) {
+        container.removeChild(container.lastChild);
+      }
+    }
+
     async function loadDashboard() {
       try {
+        // Load products
         const productsRes = await fetch('/api/products');
         const products = await productsRes.json();
         document.getElementById('totalProducts').textContent = products.length;
@@ -109,8 +303,10 @@
         document.getElementById('totalCategories').textContent = categories.length;
         
         const recent = products.slice(-5).reverse();
+        const recentContainer = document.getElementById('recentProducts');
+        
         if (recent.length > 0) {
-          document.getElementById('recentProducts').innerHTML = recent.map(p => `
+          recentContainer.innerHTML = recent.map(p => `
             <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border);">
               <img src="${p.image_url || 'https://via.placeholder.com/50'}" alt="${p.name}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
               <div>
@@ -120,19 +316,37 @@
             </div>
           `).join('');
         } else {
-          document.getElementById('recentProducts').innerHTML = '<p>Belum ada produk</p>';
+          recentContainer.innerHTML = '<p>Belum ada produk</p>';
         }
         
+        // Load logs
         const logsRes = await fetch('/api/logs');
         const logs = await logsRes.json();
         document.getElementById('totalConversations').textContent = logs.length;
+        
+        // Load recent messages
+        const recentMsgs = logs.slice(-5).reverse();
+        if (recentMsgs.length > 0) {
+          const msgContainer = document.getElementById('recentMessages');
+          msgContainer.innerHTML = recentMsgs.map(log => `
+            <div class="message-item">
+              <div class="message-header">
+                <strong>${log.customer_name || 'Unknown'}</strong>
+                <span class="phone">${log.customer_phone}</span>
+              </div>
+              <div class="message-text">${log.message.substring(0, 100)}${log.message.length > 100 ? '...' : ''}</div>
+            </div>
+          `).join('');
+        }
         
       } catch (error) {
         console.error('Error:', error);
       }
     }
     
+    // Initialize
     loadDashboard();
+    connectSSE();
   </script>
 </body>
 </html>

@@ -6,6 +6,7 @@ import productsRouter from './routes/products.js';
 import templatesRouter from './routes/templates.js';
 import settingsRouter from './routes/settings.js';
 import logsRouter from './routes/logs.js';
+import { getWAStatus, startWhatsApp, disconnectWhatsApp, sendMessage, waEvents } from '../whatsapp.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,6 +28,89 @@ app.use('/api/templates', templatesRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/logs', logsRouter);
 
+// WhatsApp API Routes
+
+// Get WhatsApp status
+app.get('/api/whatsapp/status', (req, res) => {
+  res.json(getWAStatus());
+});
+
+// Start WhatsApp connection
+app.post('/api/whatsapp/connect', async (req, res) => {
+  try {
+    const result = await startWhatsApp();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Disconnect WhatsApp
+app.post('/api/whatsapp/disconnect', async (req, res) => {
+  try {
+    const result = await disconnectWhatsApp();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Send message from admin
+app.post('/api/whatsapp/send', async (req, res) => {
+  const { phone, message } = req.body;
+  
+  if (!phone || !message) {
+    return res.status(400).json({ success: false, message: 'Phone and message required' });
+  }
+  
+  try {
+    const result = await sendMessage(phone, message);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// SSE endpoint for real-time updates
+app.get('/api/whatsapp/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  
+  // Send current status
+  res.write(`data: ${JSON.stringify({ type: 'status', data: getWAStatus() })}\n\n`);
+  
+  // Listen for events
+  const onStatus = (status) => {
+    res.write(`data: ${JSON.stringify({ type: 'status', data: { status } })}\n\n`);
+  };
+  
+  const onQR = (qr) => {
+    res.write(`data: ${JSON.stringify({ type: 'qr', data: qr })}\n\n`);
+  };
+  
+  const onOllama = (status) => {
+    res.write(`data: ${JSON.stringify({ type: 'ollama', data: status })}\n\n`);
+  };
+  
+  const onMessage = (msg) => {
+    res.write(`data: ${JSON.stringify({ type: 'message', data: msg })}\n\n`);
+  };
+  
+  waEvents.on('status', onStatus);
+  waEvents.on('qr', onQR);
+  waEvents.on('ollama', onOllama);
+  waEvents.on('message', onMessage);
+  
+  // Cleanup on disconnect
+  req.on('close', () => {
+    waEvents.off('status', onStatus);
+    waEvents.off('qr', onQR);
+    waEvents.off('ollama', onOllama);
+    waEvents.off('message', onMessage);
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`\n🔗 Admin Panel: http://localhost:${PORT}`);
@@ -36,4 +120,5 @@ app.listen(PORT, () => {
   console.log(`  Template:   http://localhost:${PORT}/templates.html`);
   console.log(`  Setting:    http://localhost:${PORT}/settings.html`);
   console.log(`  Log:        http://localhost:${PORT}/logs.html`);
+  console.log(`\n💡 WhatsApp bot can be connected from the Dashboard`);
 });

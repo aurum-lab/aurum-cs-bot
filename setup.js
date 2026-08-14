@@ -1,4 +1,4 @@
-import db from './database.js';
+import { initDatabase, getDb, saveDatabase } from './database.js';
 
 // Sample products for Toko Roti with images
 const sampleProducts = [
@@ -131,32 +131,36 @@ const sampleProducts = [
   },
 ];
 
-// Insert products
-console.log('🍞 Setting up database...');
-
-const insert = db.prepare(`
-  INSERT OR IGNORE INTO products (name, description, price, stock, category, image_url)
-  VALUES (?, ?, ?, ?, ?, ?)
-`);
-
-const insertMany = db.transaction((products) => {
-  for (const product of products) {
-    insert.run(product.name, product.description, product.price, product.stock, product.category, product.image_url);
+// Initialize database and insert products
+async function setup() {
+  console.log('🍞 Setting up database...');
+  
+  await initDatabase();
+  const db = getDb();
+  
+  // Insert products
+  for (const product of sampleProducts) {
+    db.run(`
+      INSERT OR IGNORE INTO products (name, description, price, stock, category, image_url)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [product.name, product.description, product.price, product.stock, product.category, product.image_url]);
   }
-});
-
-insertMany(sampleProducts);
-
-console.log(`✅ ${sampleProducts.length} products added!`);
-console.log('\n📋 Menu Summary:');
-
-const categories = [...new Set(sampleProducts.map(p => p.category))];
-for (const category of categories) {
-  console.log(`\n${category}:`);
-  const items = sampleProducts.filter(p => p.category === category);
-  for (const item of items) {
-    console.log(`  - ${item.name}: Rp ${item.price.toLocaleString('id-ID')}`);
+  
+  saveDatabase();
+  
+  console.log(`✅ ${sampleProducts.length} products added!`);
+  console.log('\n📋 Menu Summary:');
+  
+  const categories = [...new Set(sampleProducts.map(p => p.category))];
+  for (const category of categories) {
+    console.log(`\n${category}:`);
+    const items = sampleProducts.filter(p => p.category === category);
+    for (const item of items) {
+      console.log(`  - ${item.name}: Rp ${item.price.toLocaleString('id-ID')}`);
+    }
   }
+  
+  console.log('\n✅ Setup complete! Run "npm start" to start the bot.');
 }
 
-console.log('\n✅ Setup complete! Run "npm start" to start the bot.');
+setup().catch(console.error);

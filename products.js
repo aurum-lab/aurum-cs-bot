@@ -1,41 +1,103 @@
-import db from './database.js';
+import { getDb, saveDatabase } from './database.js';
 
 // Get all products
 export function getAllProducts() {
-  return db.prepare('SELECT * FROM products WHERE is_available = 1').all();
+  const db = getDb();
+  const results = db.exec('SELECT * FROM products WHERE is_available = 1');
+  if (results.length === 0) return [];
+  return results[0].values.map(row => ({
+    id: row[0],
+    name: row[1],
+    description: row[2],
+    price: row[3],
+    stock: row[4],
+    category: row[5],
+    image_url: row[6],
+    is_available: row[7],
+    created_at: row[8]
+  }));
 }
 
 // Get product by ID
 export function getProductById(id) {
-  return db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+  const db = getDb();
+  const results = db.exec('SELECT * FROM products WHERE id = ?', [id]);
+  if (results.length === 0 || results[0].values.length === 0) return null;
+  const row = results[0].values[0];
+  return {
+    id: row[0],
+    name: row[1],
+    description: row[2],
+    price: row[3],
+    stock: row[4],
+    category: row[5],
+    image_url: row[6],
+    is_available: row[7],
+    created_at: row[8]
+  };
 }
 
 // Get products by category
 export function getProductsByCategory(category) {
-  return db.prepare('SELECT * FROM products WHERE category = ? AND is_available = 1').all(category);
+  const db = getDb();
+  const results = db.exec('SELECT * FROM products WHERE category = ? AND is_available = 1', [category]);
+  if (results.length === 0) return [];
+  return results[0].values.map(row => ({
+    id: row[0],
+    name: row[1],
+    description: row[2],
+    price: row[3],
+    stock: row[4],
+    category: row[5],
+    image_url: row[6],
+    is_available: row[7],
+    created_at: row[8]
+  }));
 }
 
 // Search products
 export function searchProducts(query) {
-  return db.prepare(`
+  const db = getDb();
+  const results = db.exec(`
     SELECT * FROM products 
     WHERE (name LIKE ? OR description LIKE ?) 
     AND is_available = 1
-  `).all(`%${query}%`, `%${query}%`);
+  `, [`%${query}%`, `%${query}%`]);
+  if (results.length === 0) return [];
+  return results[0].values.map(row => ({
+    id: row[0],
+    name: row[1],
+    description: row[2],
+    price: row[3],
+    stock: row[4],
+    category: row[5],
+    image_url: row[6],
+    is_available: row[7],
+    created_at: row[8]
+  }));
 }
 
 // Save conversation
 export function saveConversation(customerPhone, customerName, message, response, forwarded = 0) {
-  return db.prepare('INSERT INTO conversations (customer_phone, customer_name, message, response, forwarded) VALUES (?, ?, ?, ?, ?)').run(customerPhone, customerName, message, response, forwarded);
+  const db = getDb();
+  db.run('INSERT INTO conversations (customer_phone, customer_name, message, response, forwarded) VALUES (?, ?, ?, ?, ?)', 
+    [customerPhone, customerName, message, response, forwarded]);
+  saveDatabase();
 }
 
 // Get conversation history
 export function getConversationHistory(customerPhone, limit = 10) {
-  return db.prepare(`
+  const db = getDb();
+  const results = db.exec(`
     SELECT message, response 
     FROM conversations 
     WHERE customer_phone = ? 
     ORDER BY timestamp DESC 
     LIMIT ?
-  `).all(customerPhone, limit).reverse();
+  `, [customerPhone, limit]);
+  if (results.length === 0) return [];
+  return results[0].values.map(row => ({
+    message: row[0],
+    response: row[1]
+  })).reverse();
 }

@@ -1,4 +1,10 @@
-import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
+import makeWASocket, { 
+  DisconnectReason, 
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion,
+  makeCacheableSignalKeyStore
+} from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
 import qrcode from 'qrcode-terminal';
 import config from './config.js';
 import { chatWithAI, checkOllamaConnection } from './ai.js';
@@ -8,17 +14,11 @@ import {
   saveConversation,
   getConversationHistory
 } from './products.js';
+import { initDatabase } from './database.js';
+import { mkdirSync, existsSync } from 'fs';
 
-// Initialize WhatsApp Client
-const client = new Client({
-  authStrategy: new LocalAuth({
-    dataPath: config.whatsapp.sessionDir
-  }),
-  puppeteer: {
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  }
-});
+// Ensure session directory exists
+mkdirSync(config.whatsapp.sessionDir, { recursive: true });
 
 // Generate menu text
 function generateMenu() {
@@ -42,115 +42,160 @@ function generateMenu() {
   return menu;
 }
 
-// Handle incoming messages
-client.on('message', async (message) => {
-  const chat = await message.getChat();
-  const contact = await message.getContact();
-  const phone = message.from;
-  const text = message.body.toLowerCase().trim();
+// Start bot
+async function startBot() {
+  await initDatabase();
+  
+  const { state, saveCreds } = await useMultiFileAuthState(config.whatsapp.sessionDir);
+  const { version } = await fetchLatestBaileysVersion();
 
-  console.log(`[${new Date().toISOString()}] ${contact.pushname}: ${text}`);
+  const sock = makeWASocket({
+    version,
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, undefined),
+    },
+    printQRInTerminal: false,
+    generateHighQualityLinkPreview: false,
+  });
 
-  // Skip group messages
-  if (chat.isGroup) return;
-
-  try {
-    let response = '';
-
-    // Command handling
-    if (text === 'menu' || text === 'halo' || text === 'hi') {
-      response = generateMenu();
+  // QR Code
+  sock.ev.on('connection.update', (update) => {
+    const { connection, lastDisconnect, qr } = update;
+    
+    if (qr) {
+      console.log('\nScan QR Code ini dengan WhatsApp:\n');
+      qrcode.generate(qr, { small: true });
     }
-    else if (text === 'bantuan' || text === 'help') {
-      response = `📖 *BANTUAN*\n\n` +
-        `• *menu* - Lihat daftar roti\n` +
-        `• *[nama roti]* - Lihat detail & foto\n` +
-        `• *bantuan* - Tampilkan bantuan ini\n\n` +
-        `Ada yang ingin ditanyakan? Langsung ketik saja!`;
+    
+    if (connection === 'close') {
+      const shouldReconnect = (lastDisconnect.error instanceof Boom)
+        ? lastDisconnect.error.output?.statusCode !== DisconnectReason.loggedOut
+        : true;
+      
+      console.log('Connection closed:', lastDisconnect.error, 'Reconnecting:', shouldReconnect);
+      
+      if (shouldReconnect) {
+        startBot();
+      }
+    } else if (connection === 'open') {
+      console.log('✅ WhatsApp Bot Ready!');
+      
+      // Check Ollama
+      checkOllamaConnection().then(status => {
+        if (status.connected) {
+          console.log(`✅ Ollama Connected - Models: ${status.models.join(', ')}`);
+        } else {
+          console.log('❌ Ollama Not Connected!');
+        }
+      });
     }
-    else {
-      // Check if it's a product name
-      const products = getAllProducts();
-      const product = products.find(p => 
-        p.name.toLowerCase() === text || 
-        p.name.toLowerCase().includes(text)
-      );
+  });
 
-      if (product) {
-        // Send product image if available
-        if (product.image_url) {
-          try {
-            const media = await MessageMedia.fromUrl(product.image_url);
-            await client.sendMessage(phone, media);
-          } catch (err) {
-            console.log('Failed to send image:', err.message);
+  // Save credentials
+  sock.ev.on('creds.update', saveCreds);
+
+  // Handle messages
+  sock.ev.on('messages.upsert', async ({ messages, type }) => {
+    if (type !== 'notify') return;
+    
+    for (const message of messages) {
+      if (message.fromMe) continue;
+      if (!message.message) continue;
+      
+      const phone = message.key.remoteJid;
+      const text = message.message.conversation || 
+                   message.message.extendedTextMessage?.text || '';
+      
+      if (!text) continue;
+      
+      const contactName = message.pushName || 'Unknown';
+      const textLower = text.toLowerCase().trim();
+      
+      console.log(`[${new Date().toISOString()}] ${contactName}: ${text}`);
+      
+      try {
+        let response = '';
+        
+        // Command handling
+        if (textLower === 'menu' || textLower === 'halo' || textLower === 'hi') {
+          response = generateMenu();
+        }
+        else if (textLower === 'bantuan' || textLower === 'help') {
+          response = `📖 *BANTUAN*\n\n` +
+            `• *menu* - Lihat daftar roti\n` +
+            `• *[nama roti]* - Lihat detail & foto\n` +
+            `• *bantuan* - Tampilkan bantuan ini\n\n` +
+            `Ada yang ingin ditanyakan? Langsung ketik saja!`;
+        }
+        else {
+          // Check if it's a product name
+          const products = getAllProducts();
+          const product = products.find(p => 
+            p.name.toLowerCase() === textLower || 
+            p.name.toLowerCase().includes(textLower)
+          );
+          
+          if (product) {
+            // Send product image if available
+            if (product.image_url) {
+              try {
+                await sock.sendMessage(phone, { 
+                  image: { url: product.image_url },
+                  caption: `*${product.name.toUpperCase()}*\n\nHarga: Rp ${product.price.toLocaleString('id-ID')}\nKategori: ${product.category}\nDeskripsi: ${product.description || '-'}\n\nTertarik? Langsung chat admin kami!`
+                });
+                response = ''; // Already sent with image
+              } catch (err) {
+                console.log('Failed to send image:', err.message);
+                response = `*${product.name.toUpperCase()}*\n\nHarga: Rp ${product.price.toLocaleString('id-ID')}\nKategori: ${product.category}\nDeskripsi: ${product.description || '-'}\n\nTertarik? Langsung chat admin kami!`;
+              }
+            } else {
+              response = `*${product.name.toUpperCase()}*\n\nHarga: Rp ${product.price.toLocaleString('id-ID')}\nKategori: ${product.category}\nDeskripsi: ${product.description || '-'}\n\nTertarik? Langsung chat admin kami!`;
+            }
+          }
+          else {
+            // Use AI for other messages
+            const history = getConversationHistory(phone, 5);
+            const conversationHistory = history.flatMap(h => [
+              { role: 'user', content: h.message },
+              { role: 'assistant', content: h.response }
+            ]);
+            
+            response = await chatWithAI(text, conversationHistory);
           }
         }
         
-        response = ` bakery_*${product.name.toUpperCase()}*\n\n` +
-          `Harga: Rp ${product.price.toLocaleString('id-ID')}\n` +
-          `Kategori: ${product.category}\n` +
-          `Deskripsi: ${product.description || '-'}\n\n` +
-          `Tertarik? Ketik *pesan* atau langsung chat admin kami!`;
-      }
-      else {
-        // Use AI for other messages
-        const history = getConversationHistory(phone, 5);
-        const conversationHistory = history.flatMap(h => [
-          { role: 'user', content: h.message },
-          { role: 'assistant', content: h.response }
-        ]);
-
-        response = await chatWithAI(message.body, conversationHistory);
+        // Send response if not empty
+        if (response) {
+          await sock.sendMessage(phone, { text: response });
+        }
+        
+        // Save conversation
+        saveConversation(phone, contactName, text, response, 1);
+        
+        // Forward to admin CS
+        const forwardMsg = `💬 *INQUIRY*\n\n` +
+          `Dari: ${contactName}\n` +
+          `No: ${phone}\n` +
+          `Pesan: ${text}\n\n` +
+          `Balas pesan ini untuk follow up.`;
+        
+        try {
+          await sock.sendMessage(config.bot.adminNumber, { text: forwardMsg });
+        } catch (err) {
+          console.log('Failed to forward to admin:', err.message);
+        }
+        
+      } catch (error) {
+        console.error('Error handling message:', error);
+        await sock.sendMessage(phone, { 
+          text: 'Maaf, terjadi kesalahan. Silakan coba lagi.' 
+        });
       }
     }
+  });
+}
 
-    // Send response
-    await message.reply(response);
-
-    // Save conversation
-    saveConversation(phone, contact.pushname, message.body, response, 1);
-
-    // Forward to admin CS
-    const forwardMsg = `💬 *INQUIRY*\n\n` +
-      `Dari: ${contact.pushname}\n` +
-      `No: ${phone}\n` +
-      `Pesan: ${message.body}\n\n` +
-      `Balas pesan ini untuk follow up.`;
-    
-    try {
-      await client.sendMessage(config.bot.adminNumber, forwardMsg);
-    } catch (err) {
-      console.log('Failed to forward to admin:', err.message);
-    }
-
-  } catch (error) {
-    console.error('Error handling message:', error);
-    await message.reply('Maaf, terjadi kesalahan. Silakan coba lagi.');
-  }
-});
-
-// QR Code
-client.on('qr', (qr) => {
-  console.log('\nScan QR Code ini dengan WhatsApp:\n');
-  qrcode.generate(qr, { small: true });
-});
-
-// Ready
-client.on('ready', async () => {
-  console.log('✅ WhatsApp Bot Ready!');
-  console.log('🤖 Bot akan merespon pesanan dan meneruskan ke CS.');
-});
-
-// Authentication
-client.on('authenticated', () => {
-  console.log('✅ WhatsApp Authenticated');
-});
-
-client.on('auth_failure', (msg) => {
-  console.error('❌ Authentication Failed:', msg);
-});
-
-// Start client
+// Run the bot
 console.log('🚀 Starting WhatsApp Bot...');
-client.initialize();
+startBot().catch(console.error);

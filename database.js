@@ -25,25 +25,13 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
-  CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_phone TEXT NOT NULL,
-    customer_name TEXT,
-    product_id INTEGER,
-    quantity INTEGER DEFAULT 1,
-    total_price INTEGER,
-    status TEXT DEFAULT 'pending',
-    notes TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (product_id) REFERENCES products(id)
-  );
-
   CREATE TABLE IF NOT EXISTS conversations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_phone TEXT NOT NULL,
+    customer_name TEXT,
     message TEXT,
     response TEXT,
+    forwarded INTEGER DEFAULT 0,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);

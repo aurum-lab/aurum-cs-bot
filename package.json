@@ -1,13 +1,12 @@
 {
   "name": "aurum-cs-bot",
   "version": "1.0.0",
-  "description": "WhatsApp CS Agent untuk Toko Roti - Powered by Aurum Brain AI",
+  "description": "WhatsApp CS Bot untuk Toko Roti - Powered by Aurum Brain AI",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "setup": "node setup.js",
-    "test": "node test.js"
+    "setup": "node setup.js"
   },
   "dependencies": {
     "whatsapp-web.js": "^1.23.0",

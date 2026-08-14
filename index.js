@@ -1,14 +1,10 @@
-import { Client, LocalAuth } from 'whatsapp-web.js';
+import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import config from './config.js';
 import { chatWithAI, checkOllamaConnection } from './ai.js';
 import {
   getAllProducts,
   getProductById,
-  createOrder,
-  getCustomerOrders,
-  getOrderById,
-  updateOrderStatus,
   saveConversation,
   getConversationHistory
 } from './products.js';
@@ -24,9 +20,6 @@ const client = new Client({
   }
 });
 
-// Store conversation states
-const conversationStates = new Map();
-
 // Generate menu text
 function generateMenu() {
   const products = getAllProducts();
@@ -38,13 +31,12 @@ function generateMenu() {
     menu += `*${category}*\n`;
     const categoryProducts = products.filter(p => p.category === category);
     for (const product of categoryProducts) {
-      const stok = product.stock > 0 ? `✅ Stok: ${product.stock}` : '❌ Habis';
-      menu += `• ${product.name} - Rp ${product.price.toLocaleString('id-ID')} (${stok})\n`;
+      menu += `• ${product.name} - Rp ${product.price.toLocaleString('id-ID')}\n`;
     }
     menu += '\n';
   }
 
-  menu += 'Ketik *[nama roti]* untuk cek stok & pesan\n';
+  menu += 'Ketik *[nama roti]* untuk lihat detail & foto\n';
   menu += 'Contoh: *croissant*';
 
   return menu;
@@ -62,17 +54,7 @@ client.on('message', async (message) => {
   // Skip group messages
   if (chat.isGroup) return;
 
-  // Get conversation state
-  const state = conversationStates.get(phone) || { step: 'idle', data: {} };
-
   try {
-    // Check Ollama connection first
-    const ollamaStatus = await checkOllamaConnection();
-    if (!ollamaStatus.connected) {
-      await message.reply(config.bot.offlineMessage);
-      return;
-    }
-
     let response = '';
 
     // Command handling
@@ -81,25 +63,11 @@ client.on('message', async (message) => {
     }
     else if (text === 'bantuan' || text === 'help') {
       response = `📖 *BANTUAN*\n\n` +
-        `• *menu* - Lihat daftar roti & stok\n` +
-        `• *[nama roti]* - Cek stok & pesan\n` +
-        `• *cek* - Cek status pesanan\n` +
-        `• *bantuan* - Tampilkan bantuan ini`;
+        `• *menu* - Lihat daftar roti\n` +
+        `• *[nama roti]* - Lihat detail & foto\n` +
+        `• *bantuan* - Tampilkan bantuan ini\n\n` +
+        `Ada yang ingin ditanyakan? Langsung ketik saja!`;
     }
-    else if (text === 'cek') {
-      const orders = getCustomerOrders(phone);
-      if (orders.length === 0) {
-        response = 'Anda belum memiliki pesanan.';
-      } else {
-        response = '📦 *PESANAN ANDA*\n\n';
-        for (const order of orders) {
-          response += `#${order.id} - ${order.product_name} x${order.quantity}\n`;
-          response += `Status: ${order.status}\n`;
-          response += `Total: Rp ${order.total_price.toLocaleString('id-ID')}\n\n`;
-        }
-      }
-    }
-    // Handle product inquiry (just the product name)
     else {
       // Check if it's a product name
       const products = getAllProducts();
@@ -109,71 +77,21 @@ client.on('message', async (message) => {
       );
 
       if (product) {
-        if (product.stock > 0) {
-          response = `✅ *${product.name.toUpperCase()}*\n\n` +
-            `Harga: Rp ${product.price.toLocaleString('id-ID')}\n` +
-            `Stok: ${product.stock} tersedia\n` +
-            `Deskripsi: ${product.description || '-'}\n\n` +
-            `Mau pesan? Ketik: *pesan ${product.name} [jumlah]*\n` +
-            `Contoh: *pesan ${product.name} 3*`;
-          
-          // Set state for ordering
-          conversationStates.set(phone, {
-            step: 'waiting_quantity',
-            data: { productId: product.id, productName: product.name, price: product.price }
-          });
-        } else {
-          response = `❌ Maaf, *${product.name}* sedang habis.\n\nKetik *menu* untuk lihat roti lain.`;
-        }
-      }
-      // Check if user is ordering
-      else if (text.startsWith('pesan ')) {
-        const parts = text.replace('pesan ', '').split(' ');
-        const productName = parts[0];
-        const quantity = parseInt(parts[1]) || 1;
-
-        const product = products.find(p => 
-          p.name.toLowerCase().includes(productName)
-        );
-
-        if (!product) {
-          response = `❌ Roti "${productName}" tidak ditemukan.\nKetik *menu* untuk melihat daftar.`;
-        } else if (product.stock <= 0) {
-          response = `❌ Maaf, ${product.name} sedang habis.`;
-        } else if (quantity > product.stock) {
-          response = `❌ Stok ${product.name} hanya ${product.stock}.\nMau pesan berapa?`;
-        } else {
-          const total = product.price * quantity;
-          const order = createOrder(phone, contact.pushname, product.id, quantity, total);
-          response = `✅ *PESanan Dibuat!*\n\n` +
-            `Roti: ${product.name}\n` +
-            `Jumlah: ${quantity}\n` +
-            `Harga: Rp ${product.price.toLocaleString('id-ID')} x ${quantity}\n` +
-            `Total: Rp ${total.toLocaleString('id-ID')}\n` +
-            `Order ID: #${order.lastInsertRowid}\n\n` +
-            `Untuk pembayaran, silakan hubungi admin.`;
-        }
-      }
-      // Check conversation state
-      else if (state.step === 'waiting_quantity') {
-        const quantity = parseInt(text) || 1;
-        const product = products.find(p => p.id === state.data.productId);
-
-        if (product) {
-          if (quantity > product.stock) {
-            response = `❌ Stok hanya ${product.stock}. Mau pesan berapa?`;
-          } else {
-            const total = product.price * quantity;
-            const order = createOrder(phone, contact.pushname, product.id, quantity, total);
-            response = `✅ *PESanan Dibuat!*\n\n` +
-              `Roti: ${product.name}\n` +
-              `Jumlah: ${quantity}\n` +
-              `Total: Rp ${total.toLocaleString('id-ID')}\n` +
-              `Order ID: #${order.lastInsertRowid}\n\n` +
-              `Untuk pembayaran, silakan hubungi admin.`;
-            conversationStates.delete(phone);
+        // Send product image if available
+        if (product.image_url) {
+          try {
+            const media = await MessageMedia.fromUrl(product.image_url);
+            await client.sendMessage(phone, media);
+          } catch (err) {
+            console.log('Failed to send image:', err.message);
           }
         }
+        
+        response = ` bakery_*${product.name.toUpperCase()}*\n\n` +
+          `Harga: Rp ${product.price.toLocaleString('id-ID')}\n` +
+          `Kategori: ${product.category}\n` +
+          `Deskripsi: ${product.description || '-'}\n\n` +
+          `Tertarik? Ketik *pesan* atau langsung chat admin kami!`;
       }
       else {
         // Use AI for other messages
@@ -191,7 +109,20 @@ client.on('message', async (message) => {
     await message.reply(response);
 
     // Save conversation
-    saveConversation(phone, message.body, response);
+    saveConversation(phone, contact.pushname, message.body, response, 1);
+
+    // Forward to admin CS
+    const forwardMsg = `💬 *INQUIRY*\n\n` +
+      `Dari: ${contact.pushname}\n` +
+      `No: ${phone}\n` +
+      `Pesan: ${message.body}\n\n` +
+      `Balas pesan ini untuk follow up.`;
+    
+    try {
+      await client.sendMessage(config.bot.adminNumber, forwardMsg);
+    } catch (err) {
+      console.log('Failed to forward to admin:', err.message);
+    }
 
   } catch (error) {
     console.error('Error handling message:', error);
@@ -208,14 +139,7 @@ client.on('qr', (qr) => {
 // Ready
 client.on('ready', async () => {
   console.log('✅ WhatsApp Bot Ready!');
-
-  // Check Ollama
-  const ollamaStatus = await checkOllamaConnection();
-  if (ollamaStatus.connected) {
-    console.log(`✅ Ollama Connected - Models: ${ollamaStatus.models.join(', ')}`);
-  } else {
-    console.log('❌ Ollama Not Connected!');
-  }
+  console.log('🤖 Bot akan merespon pesanan dan meneruskan ke CS.');
 });
 
 // Authentication

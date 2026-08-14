@@ -2,13 +2,13 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Template - Admin Panel</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <div class="app">
-    <!-- Sidebar -->
+    <!-- Sidebar - Desktop -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1>🍞 Aurum CS Bot</h1>
@@ -26,7 +26,7 @@
     <main class="main">
       <div class="page-header">
         <h2>Kelola Template</h2>
-        <p>Edit pesan default yang digunakan bot</p>
+        <p>Edit pesan default bot</p>
       </div>
 
       <div class="card">
@@ -34,8 +34,8 @@
           <h3>Pesan Welcome</h3>
         </div>
         <div class="form-group">
-          <label>Pesan sambutan saat pelanggan baru chat</label>
-          <textarea id="templateWelcome" rows="4" placeholder="Halo! Selamat datang..."></textarea>
+          <label>Sambutan saat chat baru</label>
+          <textarea id="templateWelcome" rows="3" placeholder="Halo! Selamat datang..."></textarea>
         </div>
         <button class="btn btn-primary" onclick="saveTemplate('welcome')">Simpan</button>
       </div>
@@ -45,8 +45,8 @@
           <h3>Pesan Offline</h3>
         </div>
         <div class="form-group">
-          <label>Pesan saat admin tidak online</label>
-          <textarea id="templateOffline" rows="3" placeholder="Maaf, admin sedang offline..."></textarea>
+          <label>Saat admin tidak online</label>
+          <textarea id="templateOffline" rows="2" placeholder="Maaf, admin offline..."></textarea>
         </div>
         <button class="btn btn-primary" onclick="saveTemplate('offline')">Simpan</button>
       </div>
@@ -56,50 +56,58 @@
           <h3>System Prompt AI</h3>
         </div>
         <div class="form-group">
-          <label>Instruksi untuk AI (Aurum Brain)</label>
-          <textarea id="templateSystemPrompt" rows="6" placeholder="Kamu adalah asisten..."></textarea>
+          <label>Instruksi untuk Aurum Brain</label>
+          <textarea id="templateSystemPrompt" rows="4" placeholder="Kamu adalah asisten..."></textarea>
         </div>
         <button class="btn btn-primary" onclick="saveTemplate('systemPrompt')">Simpan</button>
       </div>
     </main>
+
+    <!-- Tab Bar - Mobile -->
+    <nav class="tab-bar">
+      <div class="tab-bar-nav">
+        <a href="/"><span class="tab-icon">🏠</span><span>Home</span></a>
+        <a href="/products"><span class="tab-icon">🍞</span><span>Produk</span></a>
+        <a href="/templates" class="active"><span class="tab-icon">💬</span><span>Template</span></a>
+        <a href="/settings"><span class="tab-icon">⚙️</span><span>Setting</span></a>
+        <a href="/logs"><span class="tab-icon">📋</span><span>Log</span></a>
+      </div>
+    </nav>
   </div>
 
   <script>
-    // Load templates
     async function loadTemplates() {
       try {
         const res = await fetch('/api/templates');
-        const templates = await res.json();
-        document.getElementById('templateWelcome').value = templates.welcome || '';
-        document.getElementById('templateOffline').value = templates.offline || '';
-        document.getElementById('templateSystemPrompt').value = templates.systemPrompt || '';
+        const t = await res.json();
+        document.getElementById('templateWelcome').value = t.welcome || '';
+        document.getElementById('templateOffline').value = t.offline || '';
+        document.getElementById('templateSystemPrompt').value = t.systemPrompt || '';
       } catch (error) {
         console.error('Error:', error);
       }
     }
 
-    // Save template
     async function saveTemplate(type) {
-      const value = document.getElementById(`template${type.charAt(0).toUpperCase() + type.slice(1)}`).value;
+      const el = document.getElementById('template' + type.charAt(0).toUpperCase() + type.slice(1));
       try {
         await fetch('/api/templates', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ [type]: value })
+          body: JSON.stringify({ [type]: el.value })
         });
-        showToast('Template berhasil disimpan!');
+        showToast('Tersimpan!');
       } catch (error) {
-        showToast('Gagal menyimpan template', true);
+        showToast('Gagal', true);
       }
     }
 
-    // Toast notification
-    function showToast(message, isError = false) {
-      const toast = document.createElement('div');
-      toast.className = `toast ${isError ? 'error' : ''}`;
-      toast.textContent = message;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+    function showToast(msg, err = false) {
+      const t = document.createElement('div');
+      t.className = 'toast' + (err ? ' error' : '');
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
     }
 
     loadTemplates();

@@ -2,13 +2,13 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Setting - Admin Panel</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <div class="app">
-    <!-- Sidebar -->
+    <!-- Sidebar - Desktop -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1>🍞 Aurum CS Bot</h1>
@@ -26,15 +26,15 @@
     <main class="main">
       <div class="page-header">
         <h2>Setting Bot</h2>
-        <p>Konfigurasi WhatsApp Bot dan AI</p>
+        <p>Konfigurasi WhatsApp Bot</p>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <h3>WhatsApp Setting</h3>
+          <h3>WhatsApp</h3>
         </div>
         <div class="form-group">
-          <label>Nomor Admin (format: 628xxxxxxxxxx)</label>
+          <label>Nomor Admin (628xxx)</label>
           <input type="text" id="settingAdminNumber" placeholder="6281234567890">
         </div>
         <div class="form-group">
@@ -46,14 +46,14 @@
 
       <div class="card">
         <div class="card-header">
-          <h3>Ollama Setting</h3>
+          <h3>Ollama / AI</h3>
         </div>
         <div class="form-group">
-          <label>URL Ollama Server</label>
+          <label>URL Ollama</label>
           <input type="text" id="settingOllamaUrl" placeholder="http://localhost:11434">
         </div>
         <div class="form-group">
-          <label>Model Name</label>
+          <label>Model</label>
           <input type="text" id="settingOllamaModel" placeholder="aurum-brain">
         </div>
         <div class="form-group">
@@ -63,25 +63,34 @@
         <button class="btn btn-primary" onclick="saveSettings()">Simpan</button>
       </div>
     </main>
+
+    <!-- Tab Bar - Mobile -->
+    <nav class="tab-bar">
+      <div class="tab-bar-nav">
+        <a href="/"><span class="tab-icon">🏠</span><span>Home</span></a>
+        <a href="/products"><span class="tab-icon">🍞</span><span>Produk</span></a>
+        <a href="/templates"><span class="tab-icon">💬</span><span>Template</span></a>
+        <a href="/settings" class="active"><span class="tab-icon">⚙️</span><span>Setting</span></a>
+        <a href="/logs"><span class="tab-icon">📋</span><span>Log</span></a>
+      </div>
+    </nav>
   </div>
 
   <script>
-    // Load settings
     async function loadSettings() {
       try {
         const res = await fetch('/api/settings');
-        const settings = await res.json();
-        document.getElementById('settingAdminNumber').value = settings.adminNumber || '';
-        document.getElementById('settingBotName').value = settings.botName || '';
-        document.getElementById('settingOllamaUrl').value = settings.ollamaUrl || '';
-        document.getElementById('settingOllamaModel').value = settings.ollamaModel || '';
-        document.getElementById('settingTemperature').value = settings.temperature || 0.7;
+        const s = await res.json();
+        document.getElementById('settingAdminNumber').value = s.adminNumber || '';
+        document.getElementById('settingBotName').value = s.botName || '';
+        document.getElementById('settingOllamaUrl').value = s.ollamaUrl || '';
+        document.getElementById('settingOllamaModel').value = s.ollamaModel || '';
+        document.getElementById('settingTemperature').value = s.temperature || 0.7;
       } catch (error) {
         console.error('Error:', error);
       }
     }
 
-    // Save settings
     async function saveSettings() {
       const settings = {
         adminNumber: document.getElementById('settingAdminNumber').value,
@@ -97,19 +106,18 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(settings)
         });
-        showToast('Setting berhasil disimpan!');
+        showToast('Tersimpan!');
       } catch (error) {
-        showToast('Gagal menyimpan setting', true);
+        showToast('Gagal', true);
       }
     }
 
-    // Toast notification
-    function showToast(message, isError = false) {
-      const toast = document.createElement('div');
-      toast.className = `toast ${isError ? 'error' : ''}`;
-      toast.textContent = message;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+    function showToast(msg, err = false) {
+      const t = document.createElement('div');
+      t.className = 'toast' + (err ? ' error' : '');
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
     }
 
     loadSettings();

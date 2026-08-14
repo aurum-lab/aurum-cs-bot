@@ -2,13 +2,13 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Produk - Admin Panel</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <div class="app">
-    <!-- Sidebar -->
+    <!-- Sidebar - Desktop -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1>🍞 Aurum CS Bot</h1>
@@ -32,10 +32,12 @@
       <div class="card">
         <div class="card-header">
           <h3>Daftar Produk</h3>
-          <button class="btn btn-primary" onclick="openModal()">+ Tambah Produk</button>
+          <button class="btn btn-primary" onclick="openModal()">+ Tambah</button>
         </div>
+        
+        <!-- Desktop Table -->
         <div class="table-container">
-          <table>
+          <table class="table-desktop">
             <thead>
               <tr>
                 <th>Foto</th>
@@ -46,14 +48,31 @@
               </tr>
             </thead>
             <tbody id="productsTable">
-              <tr>
-                <td colspan="5" class="empty-state">Memuat data...</td>
-              </tr>
+              <tr><td colspan="5" class="empty-state">Memuat...</td></tr>
             </tbody>
           </table>
         </div>
+        
+        <!-- Mobile Card View -->
+        <div class="card-view" id="productsCardView">
+          <div class="empty-state">
+            <div class="icon">🍞</div>
+            <p>Memuat...</p>
+          </div>
+        </div>
       </div>
     </main>
+
+    <!-- Tab Bar - Mobile -->
+    <nav class="tab-bar">
+      <div class="tab-bar-nav">
+        <a href="/"><span class="tab-icon">🏠</span><span>Home</span></a>
+        <a href="/products" class="active"><span class="tab-icon">🍞</span><span>Produk</span></a>
+        <a href="/templates"><span class="tab-icon">💬</span><span>Template</span></a>
+        <a href="/settings"><span class="tab-icon">⚙️</span><span>Setting</span></a>
+        <a href="/logs"><span class="tab-icon">📋</span><span>Log</span></a>
+      </div>
+    </nav>
   </div>
 
   <!-- Modal Tambah/Edit -->
@@ -101,7 +120,6 @@
   <script>
     let products = [];
 
-    // Load products
     async function loadProducts() {
       try {
         const res = await fetch('/api/products');
@@ -112,17 +130,22 @@
       }
     }
 
-    // Render products table
     function renderProducts() {
+      // Desktop table
       const tbody = document.getElementById('productsTable');
+      // Mobile card view
+      const cardView = document.getElementById('productsCardView');
+      
       if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="icon">🍞</div><p>Belum ada produk</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Belum ada produk</td></tr>';
+        cardView.innerHTML = '<div class="empty-state"><div class="icon">🍞</div><p>Belum ada produk</p></div>';
         return;
       }
       
+      // Desktop table view
       tbody.innerHTML = products.map(p => `
         <tr>
-          <td><img src="${p.image_url || 'https://via.placeholder.com/60'}" alt="${p.name}" class="product-img"></td>
+          <td><img src="${p.image_url || 'https://via.placeholder.com/50'}" alt="${p.name}" class="product-img"></td>
           <td>${p.name}</td>
           <td>${p.category}</td>
           <td>Rp ${p.price.toLocaleString('id-ID')}</td>
@@ -132,9 +155,24 @@
           </td>
         </tr>
       `).join('');
+      
+      // Mobile card view
+      cardView.innerHTML = products.map(p => `
+        <div class="product-card">
+          <img src="${p.image_url || 'https://via.placeholder.com/56'}" alt="${p.name}">
+          <div class="product-card-info">
+            <div class="name">${p.name}</div>
+            <div class="category">${p.category}</div>
+            <div class="price">Rp ${p.price.toLocaleString('id-ID')}</div>
+          </div>
+          <div class="product-card-actions">
+            <button class="btn btn-sm" onclick="editProduct(${p.id})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id})">Hapus</button>
+          </div>
+        </div>
+      `).join('');
     }
 
-    // Open modal
     function openModal(product = null) {
       document.getElementById('productModal').classList.add('active');
       if (product) {
@@ -152,18 +190,15 @@
       }
     }
 
-    // Close modal
     function closeModal() {
       document.getElementById('productModal').classList.remove('active');
     }
 
-    // Edit product
     function editProduct(id) {
       const product = products.find(p => p.id === id);
       if (product) openModal(product);
     }
 
-    // Save product
     async function saveProduct(e) {
       e.preventDefault();
       const id = document.getElementById('productId').value;
@@ -185,25 +220,23 @@
         });
         closeModal();
         loadProducts();
-        showToast('Produk berhasil disimpan!');
+        showToast('Berhasil disimpan!');
       } catch (error) {
-        showToast('Gagal menyimpan produk', true);
+        showToast('Gagal menyimpan', true);
       }
     }
 
-    // Delete product
     async function deleteProduct(id) {
-      if (!confirm('Yakin hapus produk ini?')) return;
+      if (!confirm('Hapus produk ini?')) return;
       try {
         await fetch(`/api/products/${id}`, { method: 'DELETE' });
         loadProducts();
-        showToast('Produk berhasil dihapus!');
+        showToast('Berhasil dihapus!');
       } catch (error) {
-        showToast('Gagal menghapus produk', true);
+        showToast('Gagal menghapus', true);
       }
     }
 
-    // Toast notification
     function showToast(message, isError = false) {
       const toast = document.createElement('div');
       toast.className = `toast ${isError ? 'error' : ''}`;

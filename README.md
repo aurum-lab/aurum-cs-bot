@@ -7,14 +7,16 @@ WhatsApp Customer Service Bot untuk toko roti.
 Bot WhatsApp yang otomatis membalas pesan pelanggan dengan:
 - Menu produk lengkap dengan harga & foto
 - Detail produk saat pelanggan ketik nama roti
+- Template tag obrolan (auto-reply berdasarkan tag: #order, #komplain, dll)
 - Admin panel untuk kelola semua dari browser
 
 ## Fitur
 
 - Auto-reply pesan pelanggan
+- Template tag obrolan yang bisa di-setting
 - Menu produk dengan foto (upload JPG/PNG atau URL)
 - Admin Panel (akses dari HP & PC)
-- Pesan sambutan otomatis
+- Backup & Restore data
 - Support Termux/Android
 
 ## Tech Stack
@@ -69,6 +71,18 @@ Scan QR Code:
 | `[nama produk]` | Lihat detail produk |
 | `bantuan` | Bantuan |
 
+### Tag Obrolan (Auto-Reply)
+
+| Tag | Fungsi |
+|-----|--------|
+| `#order` | Template pemesanan |
+| `#komplain` | Template keluhan |
+| `#info` | Informasi toko |
+| `#promo` | Promo terbaru |
+| `#stok` | Cek stok |
+
+Contoh: Pelanggan ketik "mau #order" → Bot otomatis kirim template order
+
 ---
 
 ## Admin Panel
@@ -85,34 +99,28 @@ Buka: `http://localhost:2020`
 |------|--------|
 | Dashboard | Status bot, koneksi WhatsApp |
 | Produk | Tambah/edit/hapus produk, upload foto |
-| Template | Edit pesan sambutan |
-| Setting | Konfigurasi bot |
+| Template | Edit pesan sambutan + tag obrolan |
+| Setting | Konfigurasi bot + Backup/Restore |
 | Log | Riwayat percakapan |
-
-### Upload Produk
-
-1. Buka Admin Panel > Produk
-2. Klik "+ Tambah"
-3. Isi nama, harga, kategori
-4. Upload foto (JPG/PNG) atau paste URL
-5. Simpan
 
 ---
 
-## Konfigurasi
+## Backup & Restore
 
-Edit `config.js`:
+### Via Admin Panel
+Buka **Setting** → **Backup & Restore**
+- **Download Backup** - Download file backup
+- **Restore Backup** - Upload file untuk restore
 
-```javascript
-export default {
-  bot: {
-    name: 'RotiBot',
-    adminNumber: '6281234567890@s.whatsapp.net'
-  }
-}
+### Via Terminal
+
+```bash
+# Backup
+npm run backup
+
+# Restore
+npm run restore backup-file.tar.gz
 ```
-
-Ganti `adminNumber` dengan nomor WhatsApp Anda.
 
 ---
 
@@ -123,6 +131,8 @@ Ganti `adminNumber` dengan nomor WhatsApp Anda.
 | `npm start` | Jalankan bot |
 | `npm run admin` | Jalankan Admin Panel |
 | `npm run setup` | Setup database |
+| `npm run backup` | Backup data |
+| `npm run restore` | Restore data |
 | `bash install.sh` | Install dari awal |
 
 ---

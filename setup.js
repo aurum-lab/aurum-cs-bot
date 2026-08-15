@@ -1,4 +1,10 @@
 import { initDatabase, getDb, saveDatabase } from './database.js';
+import { mkdirSync, existsSync } from 'fs';
+
+// Ensure uploads directory exists
+if (!existsSync('./uploads')) {
+  mkdirSync('./uploads', { recursive: true });
+}
 
 // Sample products for Toko Roti with images
 const sampleProducts = [

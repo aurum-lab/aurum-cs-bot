@@ -1,15 +1,15 @@
 # Aurum CS Bot - WhatsApp CS Agent untuk Toko Roti
 
-WhatsApp Customer Service Agent untuk toko roti, powered by Aurum Brain AI.
+WhatsApp Customer Service Agent untuk toko roti, powered by AI.
 
 ## Fitur
 
-- 🤖 Auto-reply dengan AI (Aurum Brain)
-- 📋 Menu produk lengkap dengan harga & foto
-- 💬 Forward inquiry ke CS asli
-- 🖼️ Tampilkan foto produk (via URL)
-- ⚙️ Admin Panel untuk kelola bot
-- 💬 Pesan sambutan otomatis saat chat pertama
+- Auto-reply dengan AI (Qwen2.5 via Ollama)
+- Menu produk lengkap dengan harga & foto
+- Forward inquiry ke CS asli
+- Tampilkan foto produk (via URL atau upload JPG)
+- Admin Panel untuk kelola bot
+- Pesan sambutan otomatis saat chat pertama
 
 ## Tech Stack
 
@@ -26,7 +26,7 @@ WhatsApp Customer Service Agent untuk toko roti, powered by Aurum Brain AI.
 # Install Ollama
 curl -fsSL https://ollama.com/install.sh | sh
 
-# Jalankan Ollama (biarkan jalan)
+# Jalankan Ollama (biarkan jalan di tab terpisah)
 ollama serve
 ```
 
@@ -35,6 +35,11 @@ ollama serve
 ```bash
 # Download Qwen2.5 1.5B (ukuran ~1GB)
 ollama pull qwen2.5:1.5b
+```
+
+Cek model sudah terinstall:
+```bash
+ollama list
 ```
 
 ### 3. Clone & Install Bot
@@ -90,23 +95,27 @@ Akses: `http://localhost:2020`
 | Menu | Fungsi |
 |------|--------|
 | Dashboard | Statistik bot, koneksi WhatsApp |
-| Produk | Tambah/edit/hapus produk, upload foto via URL |
+| Produk | Tambah/edit/hapus produk |
 | Template | Edit pesan sambutan & offline |
 | Setting | Konfigurasi bot |
 | Log | Riwayat percakapan |
 
 ## Upload Produk dengan Foto
 
+### Via URL
 1. Buka Admin Panel > Produk
 2. Klik "+ Tambah"
 3. Isi data produk (nama, harga, kategori)
 4. Paste URL foto di field **URL Foto**
 5. Klik Simpan
 
-Contoh URL foto:
-```
-https://images.unsplash.com/photo-1555507036-ab1f4038024a?w=400
-```
+### Via File JPG/PNG
+1. Buka Admin Panel > Produk
+2. Klik "+ Tambah"
+3. Isi data produk (nama, harga, kategori)
+4. Klik **Pilih File** di field **Upload Foto**
+5. Pilih foto dari galeri HP
+6. Klik Simpan
 
 ## Konfigurasi
 
@@ -152,6 +161,13 @@ ollama list
 
 # Jika qwen2.5:1.5b belum ada
 ollama pull qwen2.5:1.5b
+```
+
+### Error "Cannot find module"
+```bash
+# Install ulang dependencies
+rm -rf node_modules
+npm install
 ```
 
 ## License

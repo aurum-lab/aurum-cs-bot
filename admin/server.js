@@ -11,6 +11,9 @@ import { getWAStatus, startWhatsApp, disconnectWhatsApp, sendMessage, waEvents }
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Upload directory
+const UPLOAD_DIR = join(__dirname, '..', 'uploads');
+
 const app = express();
 const PORT = 2020;
 
@@ -18,6 +21,7 @@ const PORT = 2020;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, 'public')));
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 // Initialize database
 await initDatabase();

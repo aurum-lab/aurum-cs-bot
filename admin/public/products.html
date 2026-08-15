@@ -82,7 +82,7 @@
         <h3 id="modalTitle">Tambah Produk</h3>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
-      <form id="productForm" onsubmit="saveProduct(event)">
+      <form id="productForm" onsubmit="saveProduct(event)" enctype="multipart/form-data">
         <input type="hidden" id="productId">
         <div class="form-group">
           <label>Nama Produk</label>
@@ -106,8 +106,11 @@
           </select>
         </div>
         <div class="form-group">
-          <label>URL Foto</label>
-          <input type="url" id="productImage" placeholder="https://...">
+          <label>Upload Foto (JPG/PNG)</label>
+          <input type="file" id="productImageFile" accept="image/*" onchange="previewImage(event)">
+          <small>Atau isi URL foto di bawah ini</small>
+          <input type="url" id="productImage" placeholder="https://..." style="margin-top:8px">
+          <div id="imagePreview" style="margin-top:10px"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn" onclick="closeModal()">Batal</button>
@@ -175,6 +178,7 @@
 
     function openModal(product = null) {
       document.getElementById('productModal').classList.add('active');
+      const preview = document.getElementById('imagePreview');
       if (product) {
         document.getElementById('modalTitle').textContent = 'Edit Produk';
         document.getElementById('productId').value = product.id;
@@ -183,10 +187,18 @@
         document.getElementById('productPrice').value = product.price;
         document.getElementById('productCategory').value = product.category;
         document.getElementById('productImage').value = product.image_url || '';
+        document.getElementById('productImageFile').value = '';
+        // Show current image preview
+        if (product.image_url) {
+          preview.innerHTML = `<img src="${product.image_url}" style="max-width:200px;border-radius:8px">`;
+        } else {
+          preview.innerHTML = '';
+        }
       } else {
         document.getElementById('modalTitle').textContent = 'Tambah Produk';
         document.getElementById('productForm').reset();
         document.getElementById('productId').value = '';
+        preview.innerHTML = '';
       }
     }
 
@@ -199,24 +211,44 @@
       if (product) openModal(product);
     }
 
+    function previewImage(event) {
+      const file = event.target.files[0];
+      const preview = document.getElementById('imagePreview');
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.innerHTML = `<img src="${e.target.result}" style="max-width:200px;border-radius:8px">`;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.innerHTML = '';
+      }
+    }
+
     async function saveProduct(e) {
       e.preventDefault();
       const id = document.getElementById('productId').value;
-      const data = {
-        name: document.getElementById('productName').value,
-        description: document.getElementById('productDesc').value,
-        price: parseInt(document.getElementById('productPrice').value),
-        category: document.getElementById('productCategory').value,
-        image_url: document.getElementById('productImage').value
-      };
+      const fileInput = document.getElementById('productImageFile');
+      const file = fileInput.files[0];
+
+      // Use FormData to support file upload
+      const formData = new FormData();
+      formData.append('name', document.getElementById('productName').value);
+      formData.append('description', document.getElementById('productDesc').value);
+      formData.append('price', parseInt(document.getElementById('productPrice').value));
+      formData.append('category', document.getElementById('productCategory').value);
+      formData.append('image_url', document.getElementById('productImage').value);
+
+      if (file) {
+        formData.append('image', file);
+      }
 
       try {
         const url = id ? `/api/products/${id}` : '/api/products';
         const method = id ? 'PUT' : 'POST';
         await fetch(url, {
           method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          body: formData
         });
         closeModal();
         loadProducts();

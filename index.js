@@ -82,17 +82,18 @@ async function startBot() {
     } else if (connection === 'open') {
       console.log('✅ WhatsApp Bot Ready!');
       
-      // Check Ollama
+      // Check Ollama (optional)
       checkOllamaConnection().then(status => {
-        if (status.connected) {
+        if (status.configured === false) {
+          console.log('ℹ️  Mode: Simple (tanpa AI)');
+          console.log('💡 Bot tetap jalan dengan response sederhana');
+        } else if (status.connected) {
           console.log(`✅ Ollama Connected - Models: ${status.models.join(', ')}`);
           if (status.modelReady === false) {
             console.log(`⚠️  ${status.message}`);
           }
         } else {
-          console.log('❌ Ollama Not Connected!');
-          console.log('💡 Pastikan Ollama berjalan: ollama serve');
-          console.log(`💡 Error: ${status.error}`);
+          console.log('⚠️  Ollama tidak tersedia, menggunakan mode simple');
         }
       });
     }

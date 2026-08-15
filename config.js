@@ -2,8 +2,8 @@
 export default {
   // Ollama Settings
   ollama: {
-    url: 'http://localhost:11434',
-    model: 'aurum-brain',
+    url: 'http://127.0.0.1:11434', // Gunakan 127.0.0.1 untuk Termux
+    model: 'qwen2.5:1.5b',
     temperature: 0.7,
     maxTokens: 2048
   },

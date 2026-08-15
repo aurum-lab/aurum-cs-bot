@@ -85,8 +85,13 @@ async function startBot() {
       checkOllamaConnection().then(status => {
         if (status.connected) {
           console.log(`✅ Ollama Connected - Models: ${status.models.join(', ')}`);
+          if (status.modelReady === false) {
+            console.log(`⚠️  ${status.message}`);
+          }
         } else {
           console.log('❌ Ollama Not Connected!');
+          console.log('💡 Pastikan Ollama berjalan: ollama serve');
+          console.log(`💡 Error: ${status.error}`);
         }
       });
     }

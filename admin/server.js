@@ -111,14 +111,16 @@ app.get('/api/whatsapp/events', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n🔗 Admin Panel: http://localhost:${PORT}`);
+// Start server - listen on 0.0.0.0 agar bisa diakses dari device lain
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n🔗 Admin Panel ready!`);
+  console.log(`\nAkses dari Termux:     http://localhost:${PORT}`);
+  console.log(`Akses dari HP/Lain:    http://<IP_TERMUX>:${PORT}`);
   console.log(`\nMenu:`);
-  console.log(`  Dashboard:  http://localhost:${PORT}/`);
-  console.log(`  Produk:     http://localhost:${PORT}/products.html`);
-  console.log(`  Template:   http://localhost:${PORT}/templates.html`);
-  console.log(`  Setting:    http://localhost:${PORT}/settings.html`);
-  console.log(`  Log:        http://localhost:${PORT}/logs.html`);
+  console.log(`  Dashboard:  /`);
+  console.log(`  Produk:     /products.html`);
+  console.log(`  Template:   /templates.html`);
+  console.log(`  Setting:    /settings.html`);
+  console.log(`  Log:        /logs.html`);
   console.log(`\n💡 WhatsApp bot can be connected from the Dashboard`);
 });

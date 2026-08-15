@@ -1,71 +1,31 @@
 #!/bin/bash
 
-# Aurum CS Bot - One-click Install Script for Termux
+# Aurum CS Bot - Quick Install Script
 # Usage: bash install.sh
 
 set -e
 
 echo "========================================="
-echo "  Aurum CS Bot - WhatsApp CS Bot"
-echo "  Auto Installer untuk Termux"
+echo "  Aurum CS Bot - Quick Install"
 echo "========================================="
 echo ""
 
 # Colors
-RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
 
-# Check if running in Termux
-if [ ! -d "/data/data/com.termux" ]; then
-    echo -e "${RED}Script ini hanya untuk Termux/Android${NC}"
-    exit 1
-fi
-
-# Step 1: Update packages
-echo -e "${YELLOW}[1/6] Update packages...${NC}"
-pkg update -y && pkg upgrade -y
-
-# Step 2: Install dependencies
-echo -e "${YELLOW}[2/6] Install dependencies...${NC}"
-pkg install -y git nodejs-lts npm curl
-
-# Step 3: Install Ollama
-echo -e "${YELLOW}[3/6] Install Ollama...${NC}"
-if command -v ollama &> /dev/null; then
-    echo -e "${GREEN}Ollama sudah terinstall${NC}"
-else
-    curl -fsSL https://ollama.com/install.sh | sh
-fi
-
-# Step 4: Start Ollama and pull model
-echo -e "${YELLOW}[4/6] Download AI Model (Qwen2.5 1.5B)...${NC}"
-# Start ollama in background
-ollama serve &
-OLLAMA_PID=$!
-sleep 3
-
-# Check if ollama is running
-if ! kill -0 $OLLAMA_PID 2>/dev/null; then
-    echo -e "${YELLOW}Restarting Ollama...${NC}"
-    ollama serve &
-    OLLAMA_PID=$!
-    sleep 3
-fi
-
-# Pull model
-ollama pull qwen2.5:1.5b
-
-echo -e "${GREEN}Model downloaded!${NC}"
-
-# Step 5: Install Bot Dependencies
-echo -e "${YELLOW}[5/6] Install Bot dependencies...${NC}"
+# Step 1: Install Node.js dependencies only
+echo -e "${YELLOW}[1/3] Install dependencies...${NC}"
 npm install
 
-# Step 6: Setup Database & Create dirs
-echo -e "${YELLOW}[6/6] Setup database...${NC}"
+# Step 2: Create directories
+echo -e "${YELLOW}[2/3] Create directories...${NC}"
 mkdir -p data uploads
+
+# Step 3: Setup database
+echo -e "${YELLOW}[3/3] Setup database...${NC}"
 npm run setup
 
 echo ""
@@ -73,19 +33,15 @@ echo "========================================="
 echo -e "${GREEN}  INSTALASI SELESAI!${NC}"
 echo "========================================="
 echo ""
-echo "Cara menjalankan:"
+echo "Selanjutnya:"
 echo ""
-echo "  1. Jalankan Ollama (tab terpisah):"
-echo "     ollama serve"
+echo "  1. Install Ollama (jika belum):"
+echo "     curl -fsSL https://ollama.com/install.sh | sh"
 echo ""
-echo "  2. Jalankan Bot:"
-echo "     cd $(pwd)"
+echo "  2. Download model AI:"
+echo "     ollama pull qwen2.5:1.5b"
+echo ""
+echo "  3. Jalankan bot:"
 echo "     npm start"
-echo ""
-echo "  3. Scan QR Code dengan WhatsApp"
-echo ""
-echo "  4. (Optional) Jalankan Admin Panel:"
-echo "     npm run admin"
-echo "     Buka http://localhost:2020"
 echo ""
 echo "========================================="

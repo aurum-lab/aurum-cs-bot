@@ -15,6 +15,7 @@ import {
   getConversationHistory
 } from './products.js';
 import { initDatabase } from './database.js';
+import { getTemplates } from './templates.js';
 import { mkdirSync, existsSync } from 'fs';
 
 // Ensure session directory exists
@@ -104,6 +105,9 @@ async function startBot() {
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify') return;
     
+    // Get templates
+    const templates = getTemplates();
+    
     for (const message of messages) {
       if (message.fromMe) continue;
       if (!message.message) continue;
@@ -122,9 +126,18 @@ async function startBot() {
       try {
         let response = '';
         
+        // Check if first message from this user
+        const history = getConversationHistory(phone, 1);
+        const isFirstMessage = history.length === 0;
+        
         // Command handling
         if (textLower === 'menu' || textLower === 'halo' || textLower === 'hi') {
-          response = generateMenu();
+          if (isFirstMessage && (textLower === 'halo' || textLower === 'hi')) {
+            // Send welcome + menu
+            response = templates.welcome + '\n\n' + generateMenu();
+          } else {
+            response = generateMenu();
+          }
         }
         else if (textLower === 'bantuan' || textLower === 'help') {
           response = `📖 *BANTUAN*\n\n` +
@@ -159,14 +172,19 @@ async function startBot() {
             }
           }
           else {
-            // Use AI for other messages
-            const history = getConversationHistory(phone, 5);
-            const conversationHistory = history.flatMap(h => [
-              { role: 'user', content: h.message },
-              { role: 'assistant', content: h.response }
-            ]);
-            
-            response = await chatWithAI(text, conversationHistory);
+            // First message - send welcome + menu
+            if (isFirstMessage) {
+              response = templates.welcome + '\n\n' + generateMenu();
+            } else {
+              // Use AI for other messages
+              const convHistory = getConversationHistory(phone, 5);
+              const conversationHistory = convHistory.flatMap(h => [
+                { role: 'user', content: h.message },
+                { role: 'assistant', content: h.response }
+              ]);
+              
+              response = await chatWithAI(text, conversationHistory);
+            }
           }
         }
         

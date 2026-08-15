@@ -61,6 +61,16 @@
         </div>
         <button class="btn btn-primary" onclick="saveTemplate('systemPrompt')">Simpan</button>
       </div>
+
+      <!-- Tag Templates Section -->
+      <div class="card">
+        <div class="card-header">
+          <h3>🏷️ Template Tag Obrolan</h3>
+          <button class="btn btn-success" onclick="showAddTagModal()">+ Tambah Tag</button>
+        </div>
+        <p class="text-muted">Template otomatis berdasarkan tag dalam pesan (misal: #order, #komplain)</p>
+        <div id="tagTemplatesList"></div>
+      </div>
     </main>
 
     <!-- Tab Bar - Mobile -->
@@ -75,7 +85,43 @@
     </nav>
   </div>
 
+  <!-- Add/Edit Tag Modal -->
+  <div id="tagModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Tambah Tag Template</h3>
+        <button class="btn-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editTagKey">
+        <div class="form-group">
+          <label>Tag (misal: #order)</label>
+          <input type="text" id="inputTag" placeholder="#order" required>
+        </div>
+        <div class="form-group">
+          <label>Nama Tag</label>
+          <input type="text" id="inputTagName" placeholder="Order" required>
+        </div>
+        <div class="form-group">
+          <label>Template Pesan</label>
+          <textarea id="inputTagTemplate" rows="5" placeholder="🛒 *ORDER*\n\nTerima kasih..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="inputAutoReply" checked> Auto Reply
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" onclick="saveTagTemplate()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    let tagTemplates = {};
+
     async function loadTemplates() {
       try {
         const res = await fetch('/api/templates');
@@ -83,6 +129,10 @@
         document.getElementById('templateWelcome').value = t.welcome || '';
         document.getElementById('templateOffline').value = t.offline || '';
         document.getElementById('templateSystemPrompt').value = t.systemPrompt || '';
+        
+        // Load tag templates
+        tagTemplates = t.tags || {};
+        renderTagTemplates();
       } catch (error) {
         console.error('Error:', error);
       }
@@ -99,6 +149,116 @@
         showToast('Tersimpan!');
       } catch (error) {
         showToast('Gagal', true);
+      }
+    }
+
+    function renderTagTemplates() {
+      const container = document.getElementById('tagTemplatesList');
+      if (Object.keys(tagTemplates).length === 0) {
+        container.innerHTML = '<p class="text-muted">Belum ada tag template. Klik "+ Tambah Tag" untuk menambahkan.</p>';
+        return;
+      }
+
+      let html = '<div class="tag-grid">';
+      for (const [tag, data] of Object.entries(tagTemplates)) {
+        html += `
+          <div class="tag-card">
+            <div class="tag-header">
+              <span class="tag-badge">${tag}</span>
+              <span class="tag-name">${data.name}</span>
+              <span class="tag-status ${data.autoReply ? 'active' : 'inactive'}">${data.autoReply ? 'ON' : 'OFF'}</span>
+            </div>
+            <div class="tag-preview">${data.template.substring(0, 100)}${data.template.length > 100 ? '...' : ''}</div>
+            <div class="tag-actions">
+              <button class="btn btn-sm" onclick="editTagTemplate('${tag}')">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteTagTemplate('${tag}')">Hapus</button>
+            </div>
+          </div>
+        `;
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function showAddTagModal() {
+      document.getElementById('modalTitle').textContent = 'Tambah Tag Template';
+      document.getElementById('editTagKey').value = '';
+      document.getElementById('inputTag').value = '';
+      document.getElementById('inputTagName').value = '';
+      document.getElementById('inputTagTemplate').value = '';
+      document.getElementById('inputAutoReply').checked = true;
+      document.getElementById('inputTag').disabled = false;
+      document.getElementById('tagModal').style.display = 'flex';
+    }
+
+    function editTagTemplate(tag) {
+      const data = tagTemplates[tag];
+      if (!data) return;
+
+      document.getElementById('modalTitle').textContent = 'Edit Tag Template';
+      document.getElementById('editTagKey').value = tag;
+      document.getElementById('inputTag').value = tag;
+      document.getElementById('inputTag').disabled = true;
+      document.getElementById('inputTagName').value = data.name || '';
+      document.getElementById('inputTagTemplate').value = data.template || '';
+      document.getElementById('inputAutoReply').checked = data.autoReply !== false;
+      document.getElementById('tagModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('tagModal').style.display = 'none';
+    }
+
+    async function saveTagTemplate() {
+      const editKey = document.getElementById('editTagKey').value;
+      const tag = document.getElementById('inputTag').value.trim();
+      const name = document.getElementById('inputTagName').value.trim();
+      const template = document.getElementById('inputTagTemplate').value;
+      const autoReply = document.getElementById('inputAutoReply').checked;
+
+      if (!tag || !template) {
+        showToast('Tag dan template wajib diisi!', true);
+        return;
+      }
+
+      const tagKey = tag.startsWith('#') ? tag : `#${tag}`;
+
+      try {
+        if (editKey) {
+          // Update existing
+          await fetch(`/api/templates/tags/${encodeURIComponent(editKey)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, template, autoReply })
+          });
+        } else {
+          // Create new
+          await fetch('/api/templates/tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tag: tagKey, name, template, autoReply })
+          });
+        }
+        
+        closeModal();
+        loadTemplates();
+        showToast('Tersimpan!');
+      } catch (error) {
+        showToast('Gagal menyimpan!', true);
+      }
+    }
+
+    async function deleteTagTemplate(tag) {
+      if (!confirm(`Hapus tag ${tag}?`)) return;
+
+      try {
+        await fetch(`/api/templates/tags/${encodeURIComponent(tag)}`, {
+          method: 'DELETE'
+        });
+        loadTemplates();
+        showToast('Dihapus!');
+      } catch (error) {
+        showToast('Gagal menghapus!', true);
       }
     }
 

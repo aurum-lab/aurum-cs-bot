@@ -695,3 +695,102 @@ body {
   color: var(--text-secondary);
   line-height: 1.4;
 }
+
+/* Tag Templates */
+.text-muted {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-bottom: 12px;
+}
+
+.tag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.tag-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.tag-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tag-badge {
+  background: var(--accent);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tag-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.tag-status {
+  margin-left: auto;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.tag-status.active {
+  background: rgba(46, 213, 115, 0.2);
+  color: var(--success);
+}
+
+.tag-status.inactive {
+  background: rgba(255, 71, 87, 0.2);
+  color: var(--danger);
+}
+
+.tag-preview {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 10px;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+.tag-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Mobile tag grid */
+@media (max-width: 768px) {
+  .tag-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Modal additional */
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.btn-close:hover {
+  color: var(--text);
+}
+
+.modal-body .form-group input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}

@@ -40,6 +40,14 @@ pkg update && pkg upgrade -y
 pkg install git nodejs-lts npm -y
 ```
 
+Cek apakah sudah terinstall:
+```bash
+node -v
+npm -v
+```
+
+Jika muncul versi (misal `v18.x.x`), berarti sudah benar.
+
 ### Langkah 3: Clone & Install Bot
 
 ```bash
@@ -138,6 +146,16 @@ npm run restore backup-file.tar.gz
 ---
 
 ## Troubleshooting
+
+**Node.js/npm tidak terinstall:**
+```bash
+pkg install nodejs-lts npm -y
+```
+
+**Permission error:**
+```bash
+chmod +x *.sh
+```
 
 **Bot tidak jalan:**
 ```bash

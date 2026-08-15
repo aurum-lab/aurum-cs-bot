@@ -1,129 +1,73 @@
-# Aurum CS Bot - WhatsApp CS Agent untuk Toko Roti
+# Aurum CS Bot
 
-WhatsApp Customer Service Agent untuk toko roti, powered by AI (Qwen2.5 via Ollama).
+WhatsApp Customer Service Bot untuk toko roti, powered by AI.
+
+## Demo
+
+Bot akan otomatis membalas pesan pelanggan dengan:
+- Menu produk lengkap dengan harga & foto
+- Detail produk saat pelanggan mengetik nama roti
+- Respon AI untuk pertanyaan umum
 
 ## Fitur
 
 - Auto-reply dengan AI (Qwen2.5-1.5B via Ollama)
-- Menu produk lengkap dengan harga & foto
-- Forward inquiry ke CS asli
-- Tampilkan foto produk (via URL atau upload JPG/PNG)
-- Admin Panel untuk kelola bot (akses dari HP & PC)
-- Pesan sambutan otomatis saat chat pertama
+- Menu produk dengan foto
+- Admin Panel untuk kelola produk & bot
+- Upload foto produk (URL atau file JPG/PNG)
+- Pesan sambutan otomatis
+- Support Termux/Android
 
 ## Tech Stack
 
-- **WhatsApp**: Baileys (support Termux/Android)
-- **AI**: Qwen2.5-1.5B via Ollama
-- **Database**: SQLite (sql.js)
-- **Admin Panel**: Express.js + HTML/CSS
+- WhatsApp: Baileys
+- AI: Qwen2.5-1.5B via Ollama
+- Database: SQLite
+- Admin Panel: Express.js
 
-## Setup di Termux (Android)
-
-### Cara Cepat - Install Semua Sekaligus (Recommended)
+## Quick Start (Termux)
 
 ```bash
 # Install dependencies
-pkg update && pkg install git nodejs-lts npm curl
+pkg install git nodejs-lts npm curl
 
-# Clone repo
+# Clone
 git clone https://github.com/aurum-lab/aurum-cs-bot.git
 cd aurum-cs-bot
 
-# Install Ollama + Model AI + Bot (otomatis)
+# Install bot
 bash install.sh
-```
 
-### Cara Manual
-
-#### 1. Install Ollama
-```bash
+# Install Ollama
 curl -fsSL https://ollama.com/install.sh | sh
-```
 
-#### 2. Download Model AI
-```bash
+# Download model AI
 ollama pull qwen2.5:1.5b
-```
 
-#### 3. Install Bot
-```bash
-git clone https://github.com/aurum-lab/aurum-cs-bot.git
-cd aurum-cs-bot
-npm install
-npm run setup
-```
-
-## Jalankan Bot
-
-```bash
-# Cara mudah - otomatis start Ollama + Bot
+# Jalankan bot
 npm start
 ```
 
-Atau manual (2 tab terminal):
-```bash
-# Tab 1
-ollama serve
+## Commands
 
-# Tab 2
-npm run start:bot
-```
+| Command | Fungsi |
+|---------|--------|
+| `halo` | Sambutan + Menu |
+| `menu` | Lihat daftar produk |
+| `[nama produk]` | Lihat detail produk |
+| `bantuan` | Bantuan |
 
-Scan QR Code dengan WhatsApp:
-1. Buka WhatsApp di HP
-2. Settings > Linked Devices > Link a Device
-3. Scan QR Code yang muncul di terminal
-
-## Jalankan Admin Panel
+## Admin Panel
 
 ```bash
 npm run admin
 ```
 
-Buka `http://localhost:2020` di browser.
-
-## Commands WhatsApp
-
-| Command | Fungsi |
-|---------|--------|
-| `halo` / `hi` | Sambutan + Menu |
-| `menu` | Lihat daftar roti |
-| `[nama roti]` | Lihat detail & foto roti |
-| `bantuan` / `help` | Bantuan |
-
-## Admin Panel
-
-Akses: `http://localhost:2020`
-
-| Menu | Fungsi |
-|------|--------|
-| Dashboard | Statistik bot, koneksi WhatsApp |
-| Produk | Tambah/edit/hapus produk, upload foto |
-| Template | Edit pesan sambutan & offline |
-| Setting | Konfigurasi bot |
-| Log | Riwayat percakapan |
-
-## Upload Produk dengan Foto
-
-### Via URL
-1. Buka Admin Panel > Produk
-2. Klik "+ Tambah"
-3. Isi data produk (nama, harga, kategori)
-4. Paste URL foto di field **URL Foto**
-5. Klik Simpan
-
-### Via File JPG/PNG
-1. Buka Admin Panel > Produk
-2. Klik "+ Tambah"
-3. Isi data produk (nama, harga, kategori)
-4. Klik **Pilih File** di field **Upload Foto**
-5. Pilih foto dari galeri HP
-6. Klik Simpan
+Buka `http://localhost:2020`
 
 ## Konfigurasi
 
-Edit `config.js` untuk pengaturan bot:
+Edit `config.js`:
 
 ```javascript
 export default {
@@ -133,45 +77,9 @@ export default {
   },
   bot: {
     name: 'RotiBot',
-    adminNumber: '6281234567890@s.whatsapp.net' // Ganti nomor admin
+    adminNumber: '628xxx@s.whatsapp.net' // Nomor admin
   }
 }
-```
-
-## Scripts
-
-| Command | Fungsi |
-|---------|--------|
-| `npm start` | Jalankan Ollama + Bot |
-| `npm run start:bot` | Jalankan Bot saja (Ollama harus running) |
-| `npm run admin` | Jalankan Admin Panel |
-| `npm run setup` | Setup/reset database |
-| `bash install.sh` | Install semua dari awal |
-
-## Troubleshooting
-
-### Ollama tidak jalan
-```bash
-pgrep ollama
-ollama serve &
-```
-
-### Bot tidak connect
-```bash
-rm -rf data/whatsapp-session
-npm start
-```
-
-### Model belum terinstall
-```bash
-ollama list
-ollama pull qwen2.5:1.5b
-```
-
-### Error "Cannot find module"
-```bash
-rm -rf node_modules
-npm install
 ```
 
 ## License

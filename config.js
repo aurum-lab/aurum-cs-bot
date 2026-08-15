@@ -23,6 +23,6 @@ export default {
     name: 'RotiBot',
     welcomeMessage: 'Halo! 👋 Selamat datang di Toko Roti kami!\n\nKetik *menu* untuk lihat daftar roti\nKetik *[nama roti]* untuk cek stok & pesan\nKetik *cek* untuk cek status pesanan\nKetik *bantuan* untuk bantuan',
     offlineMessage: 'Maaf, admin sedang offline. Pesan anda akan kami balas segera.',
-    adminNumber: '6281234567890@s.whatsapp.net' // Ganti dengan nomor admin
+    adminNumber: '6281234567890@s.whatsapp.net' // Ganti dengan nomor WA admin Anda
   }
 }

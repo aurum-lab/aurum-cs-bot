@@ -33,38 +33,74 @@ Bot WhatsApp yang otomatis membalas pesan pelanggan dengan:
 
 Download Termux dari F-Droid: https://f-droid.org/en/packages/com.termux/
 
-### Langkah 2: Setup Termux
+> ⚠️ Jangan download dari Play Store (versi disana sudah outdated)
 
+### Langkah 2: Update Termux
+
+Buka Termux, lalu jalankan:
 ```bash
 pkg update && pkg upgrade -y
-pkg install git nodejs-lts npm -y
 ```
 
-Cek apakah sudah terinstall:
+### Langkah 3: Install Git
+
 ```bash
-node -v
-npm -v
+pkg install git -y
 ```
 
-Jika muncul versi (misal `v18.x.x`), berarti sudah benar.
+Cek: `git --version`
 
-### Langkah 3: Clone & Install Bot
+### Langkah 4: Install Node.js
+
+```bash
+pkg install nodejs-lts -y
+```
+
+Cek: `node -v`
+
+### Langkah 5: Install npm
+
+```bash
+pkg install npm -y
+```
+
+Cek: `npm -v`
+
+### Langkah 6: Clone Repository
 
 ```bash
 git clone https://github.com/aurum-lab/aurum-cs-bot.git
-cd aurum-cs-bot
-bash install.sh
 ```
 
-### Langkah 4: Jalankan Bot
+### Langkah 7: Masuk Folder Bot
+
+```bash
+cd aurum-cs-bot
+```
+
+### Langkah 8: Install Dependencies
+
+```bash
+npm install
+```
+
+### Langkah 9: Setup Database
+
+```bash
+npm run setup
+```
+
+### Langkah 10: Jalankan Bot
 
 ```bash
 npm start
 ```
 
-Scan QR Code:
-1. Buka WhatsApp > Titik Tiga > Linked Devices > Link a Device
-2. Scan QR Code di Termux
+### Langkah 11: Scan QR Code
+
+1. Buka WhatsApp di HP
+2. Titik Tiga (⋮) > Linked Devices > Link a Device
+3. Scan QR Code yang muncul di Termux
 
 **Selesai!** Bot sudah jalan.
 

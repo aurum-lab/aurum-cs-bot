@@ -20,50 +20,49 @@ WhatsApp Customer Service Agent untuk toko roti, powered by AI.
 
 ## Setup di Termux (Android)
 
-### 1. Install Ollama
-
-```bash
-# Install Ollama
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Jalankan Ollama (biarkan jalan di tab terpisah)
-ollama serve
-```
-
-### 2. Download Model AI
-
-```bash
-# Download Qwen2.5 1.5B (ukuran ~1GB)
-ollama pull qwen2.5:1.5b
-```
-
-Cek model sudah terinstall:
-```bash
-ollama list
-```
-
-### 3. Clone & Install Bot
+### Cara Cepat (Recommended)
 
 ```bash
 # Clone repo
 git clone https://github.com/aurum-lab/aurum-cs-bot.git
 cd aurum-cs-bot
 
-# Install dependencies
-npm install
+# Install semua (Ollama + Model + Bot)
+bash install.sh
 ```
 
-### 4. Setup Database
+### Cara Manual
+
+#### 1. Install Ollama
 
 ```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+#### 2. Download Model AI
+
+```bash
+ollama pull qwen2.5:1.5b
+```
+
+#### 3. Clone & Install Bot
+
+```bash
+git clone https://github.com/aurum-lab/aurum-cs-bot.git
+cd aurum-cs-bot
+npm install
 npm run setup
 ```
 
-### 5. Jalankan Bot
+### Jalankan Bot
 
 ```bash
-# Jalankan WhatsApp Bot
+# Otomatis start Ollama + Bot
 npm start
+
+# ATAU manual (2 tab terminal)
+# Tab 1: ollama serve
+# Tab 2: npm run start:bot
 ```
 
 Scan QR Code dengan WhatsApp:
@@ -71,13 +70,13 @@ Scan QR Code dengan WhatsApp:
 2. Settings > Linked Devices > Link a Device
 3. Scan QR Code yang muncul di terminal
 
-### 6. Jalankan Admin Panel (Optional)
+### Jalankan Admin Panel (Optional)
 
 ```bash
 npm run admin
 ```
 
-Buka `http://localhost:2020` di browser untuk akses Admin Panel.
+Buka `http://localhost:2020` di browser.
 
 ## Commands WhatsApp
 

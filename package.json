@@ -5,9 +5,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "bash start.sh",
+    "start:bot": "node index.js",
     "admin": "node admin/server.js",
-    "setup": "node setup.js"
+    "setup": "node setup.js",
+    "install:termux": "bash install.sh"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.0",

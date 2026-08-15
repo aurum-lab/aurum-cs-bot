@@ -6,6 +6,7 @@ import productsRouter from './routes/products.js';
 import templatesRouter from './routes/templates.js';
 import settingsRouter from './routes/settings.js';
 import logsRouter from './routes/logs.js';
+import backupRouter from './routes/backup.js';
 import { getWAStatus, startWhatsApp, disconnectWhatsApp, sendMessage, waEvents } from '../whatsapp.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,6 +32,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/templates', templatesRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/logs', logsRouter);
+app.use('/api/backup', backupRouter);
 
 // WhatsApp API Routes
 

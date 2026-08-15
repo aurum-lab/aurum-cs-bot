@@ -9,7 +9,10 @@
     "start:bot": "node index.js",
     "admin": "node admin/server.js",
     "setup": "node setup.js",
-    "install:termux": "bash install.sh"
+    "install:termux": "bash install.sh",
+    "backup": "bash backup.sh",
+    "backup:custom": "bash backup.sh",
+    "restore": "bash restore.sh"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.0",

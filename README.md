@@ -12,18 +12,20 @@ Bot WhatsApp yang otomatis membalas pesan pelanggan dengan:
 
 ## Fitur
 
-- Auto-reply pesan pelanggan
-- Template tag obrolan yang bisa di-setting
-- Menu produk dengan foto (upload JPG/PNG atau URL)
-- Admin Panel (akses dari HP & PC)
-- Backup & Restore data
-- Support Termux/Android
+- ✅ Auto-reply pesan pelanggan
+- ✅ Template tag obrolan yang bisa di-setting
+- ✅ Menu produk dengan foto (upload JPG/PNG atau URL)
+- ✅ Admin Panel (akses dari HP & PC)
+- ✅ Backup & Restore data
+- ✅ Support Termux/Android
+- ✅ **Ollama/AI bersifat OPTIONAL** - Bot tetap jalan tanpa AI
 
 ## Tech Stack
 
 - WhatsApp: Baileys
 - Database: SQLite
 - Admin Panel: Express.js
+- AI (opsional): Ollama + Qwen2.5
 
 ---
 
@@ -96,6 +98,10 @@ npm run setup
 npm start
 ```
 
+> ✅ Bot langsung jalan tanpa perlu install Ollama/AI
+> 
+> Jika ingin pakai AI (opsional), lihat bagian "Install AI (Opsional)" di bawah
+
 ### Langkah 11: Scan QR Code
 
 1. Buka WhatsApp di HP
@@ -103,6 +109,43 @@ npm start
 3. Scan QR Code yang muncul di Termux
 
 **Selesai!** Bot sudah jalan.
+
+---
+
+## Install AI (Opsional)
+
+Bot tetap jalan tanpa AI. Jika ingin fitur AI (chat lebih pintar):
+
+### 1. Install Ollama
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+### 2. Download Model
+
+```bash
+ollama pull qwen2.5:1.5b
+```
+
+### 3. Aktifkan di Config
+
+Edit `config.js`, uncomment bagian ollama:
+
+```javascript
+ollama: {
+  url: 'http://127.0.0.1:11434',
+  model: 'qwen2.5:1.5b',
+  temperature: 0.7,
+  maxTokens: 2048
+},
+```
+
+### 4. Restart Bot
+
+```bash
+npm start
+```
 
 ---
 
@@ -199,12 +242,26 @@ rm -rf data/whatsapp-session
 npm start
 ```
 
+**Admin panel error:**
+```bash
+npm run admin
+```
+Jika error, coba:
+```bash
+rm -rf node_modules
+npm install
+npm run admin
+```
+
 **Error lain:**
 ```bash
 rm -rf node_modules
 npm install
 npm start
 ```
+
+**Ollama tidak terinstall?**
+Tidak masalah! Bot tetap jalan tanpa AI. Lihat bagian "Install AI (Opsional)" jika ingin menambahkan fitur AI.
 
 ---
 

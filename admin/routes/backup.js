@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync, existsSync, createReadStream } from 'fs';
+import { readFileSync, writeFileSync, existsSync, createReadStream, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -10,9 +10,13 @@ const __dirname = dirname(__filename);
 
 const router = Router();
 
+// Ensure backup temp directory exists
+const TEMP_DIR = join(__dirname, '../../data/tmp-backup');
+mkdirSync(TEMP_DIR, { recursive: true });
+
 // Setup multer for file upload
 const upload = multer({ 
-  dest: '/tmp/aurum-backup/',
+  dest: TEMP_DIR,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB max
 });
 
@@ -24,7 +28,7 @@ router.get('/', (req, res) => {
   try {
     const date = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
     const backupName = `aurum-cs-bot-backup-${date}`;
-    const tempDir = join('/tmp', backupName);
+    const tempDir = join(TEMP_DIR, backupName);
     
     // Create temp directory
     execSync(`mkdir -p "${tempDir}"`);
@@ -54,7 +58,7 @@ router.get('/', (req, res) => {
     }
     
     // Create tar.gz archive
-    const archivePath = join('/tmp', `${backupName}.tar.gz`);
+    const archivePath = join(TEMP_DIR, `${backupName}.tar.gz`);
     execSync(`tar -czf "${archivePath}" -C /tmp "${backupName}"`);
     
     // Send file
@@ -82,7 +86,7 @@ router.post('/', upload.single('backup'), (req, res) => {
       return res.status(400).json({ error: 'File backup tidak ditemukan' });
     }
     
-    const tempDir = join('/tmp', `aurum-restore-${Date.now()}`);
+    const tempDir = join(TEMP_DIR, `aurum-restore-${Date.now()}`);
     
     // Extract archive
     execSync(`mkdir -p "${tempDir}" && tar -xzf "${req.file.path}" -C "${tempDir}"`);

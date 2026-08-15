@@ -59,7 +59,7 @@ router.get('/', (req, res) => {
     
     // Create tar.gz archive
     const archivePath = join(TEMP_DIR, `${backupName}.tar.gz`);
-    execSync(`tar -czf "${archivePath}" -C /tmp "${backupName}"`);
+    execSync(`tar -czf "${archivePath}" -C "${TEMP_DIR}" "${backupName}"`);
     
     // Send file
     res.setHeader('Content-Type', 'application/gzip');

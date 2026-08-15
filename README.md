@@ -92,23 +92,33 @@ npm install
 npm run setup
 ```
 
-### Langkah 10: Jalankan Bot
+### Langkah 10: Jalankan Admin Panel
+
+```bash
+npm run admin
+```
+
+Buka di browser: `http://localhost:2020`
+
+### Langkah 11: Scan QR Code (dari Admin Panel)
+
+1. Buka Dashboard di admin panel
+2. Klik **Connect WhatsApp**
+3. Scan QR Code dengan WhatsApp
+
+**Selesai!** Bot sudah jalan.
+
+---
+
+### Jalankan Bot (Opsional)
+
+Jika ingin jalankan bot tanpa admin panel:
 
 ```bash
 npm start
 ```
 
-> ✅ Bot langsung jalan tanpa perlu install Ollama/AI
-> 
-> Jika ingin pakai AI (opsional), lihat bagian "Install AI (Opsional)" di bawah
-
-### Langkah 11: Scan QR Code
-
-1. Buka WhatsApp di HP
-2. Titik Tiga (⋮) > Linked Devices > Link a Device
-3. Scan QR Code yang muncul di Termux
-
-**Selesai!** Bot sudah jalan.
+> ⚠️ `npm start` dan `npm run admin` tidak bisa jalan bersamaan di port yang sama.
 
 ---
 
@@ -215,12 +225,14 @@ npm run restore backup-file.tar.gz
 
 | Command | Fungsi |
 |---------|--------|
-| `npm start` | Jalankan bot |
-| `npm run admin` | Jalankan Admin Panel |
+| `npm run admin` | Jalankan Admin Panel (rekomendasi) |
+| `npm start` | Jalankan bot tanpa admin panel |
 | `npm run setup` | Setup database |
 | `npm run backup` | Backup data |
 | `npm run restore` | Restore data |
 | `bash install.sh` | Install dari awal |
+
+> 💡 **Disarankan pakai `npm run admin`** karena bisa kelola bot dari browser.
 
 ---
 

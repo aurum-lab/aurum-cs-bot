@@ -7,7 +7,17 @@ import templatesRouter from './routes/templates.js';
 import settingsRouter from './routes/settings.js';
 import logsRouter from './routes/logs.js';
 import backupRouter from './routes/backup.js';
-import { getWAStatus, startWhatsApp, disconnectWhatsApp, sendMessage, waEvents } from '../whatsapp.js';
+
+// WhatsApp - optional import
+let whatsappModule = null;
+try {
+  whatsappModule = await import('../whatsapp.js');
+} catch (error) {
+  console.warn('⚠️  WhatsApp module tidak bisa dimuat:', error.message);
+  console.warn('Admin panel berjalan tanpa fitur WhatsApp');
+}
+
+const { getWAStatus, startWhatsApp, disconnectWhatsApp, sendMessage, waEvents } = whatsappModule || {};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -38,11 +48,17 @@ app.use('/api/backup', backupRouter);
 
 // Get WhatsApp status
 app.get('/api/whatsapp/status', (req, res) => {
+  if (!getWAStatus) {
+    return res.json({ status: 'unavailable', message: 'WhatsApp module tidak tersedia' });
+  }
   res.json(getWAStatus());
 });
 
 // Start WhatsApp connection
 app.post('/api/whatsapp/connect', async (req, res) => {
+  if (!startWhatsApp) {
+    return res.status(500).json({ success: false, message: 'WhatsApp module tidak tersedia' });
+  }
   try {
     const result = await startWhatsApp();
     res.json(result);
@@ -53,6 +69,9 @@ app.post('/api/whatsapp/connect', async (req, res) => {
 
 // Disconnect WhatsApp
 app.post('/api/whatsapp/disconnect', async (req, res) => {
+  if (!disconnectWhatsApp) {
+    return res.status(500).json({ success: false, message: 'WhatsApp module tidak tersedia' });
+  }
   try {
     const result = await disconnectWhatsApp();
     res.json(result);
@@ -63,6 +82,10 @@ app.post('/api/whatsapp/disconnect', async (req, res) => {
 
 // Send message from admin
 app.post('/api/whatsapp/send', async (req, res) => {
+  if (!sendMessage) {
+    return res.status(500).json({ success: false, message: 'WhatsApp module tidak tersedia' });
+  }
+  
   const { phone, message } = req.body;
   
   if (!phone || !message) {
@@ -79,6 +102,10 @@ app.post('/api/whatsapp/send', async (req, res) => {
 
 // SSE endpoint for real-time updates
 app.get('/api/whatsapp/events', (req, res) => {
+  if (!waEvents || !getWAStatus) {
+    return res.status(503).json({ error: 'WhatsApp module tidak tersedia' });
+  }
+  
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');

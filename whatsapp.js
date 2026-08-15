@@ -15,7 +15,7 @@ import {
   getConversationHistory
 } from './products.js';
 import { initDatabase } from './database.js';
-import { getTemplates } from './templates.js';
+import { getTemplates, detectTag, getTemplateByTag } from './templates.js';
 import { mkdirSync, existsSync } from 'fs';
 import { EventEmitter } from 'events';
 
@@ -162,6 +162,10 @@ export async function startWhatsApp() {
         const history = getConversationHistory(phone, 1);
         const isFirstMessage = history.length === 0;
         
+        // Deteksi tag dari pesan
+        const detectedTag = detectTag(text);
+        const tagTemplate = getTemplateByTag(detectedTag);
+        
         // Command handling
         if (textLower === 'menu' || textLower === 'halo' || textLower === 'hi') {
           if (isFirstMessage && (textLower === 'halo' || textLower === 'hi')) {
@@ -176,7 +180,17 @@ export async function startWhatsApp() {
             `• *menu* - Lihat daftar roti\n` +
             `• *[nama roti]* - Lihat detail & foto\n` +
             `• *bantuan* - Tampilkan bantuan ini\n\n` +
+            `Tag tersedia:\n` +
+            `• *#order* - Untuk melakukan pemesanan\n` +
+            `• *#komplain* - Untuk sampaikan keluhan\n` +
+            `• *#info* - Lihat informasi toko\n` +
+            `• *#promo* - Lihat promo terbaru\n` +
+            `• *#stok* - Cek ketersediaan roti\n\n` +
             `Ada yang ingin ditanyakan? Langsung ketik saja!`;
+        }
+        // Jika tag terdeteksi dan ada template-nya
+        else if (detectedTag && tagTemplate && tagTemplate.autoReply) {
+          response = tagTemplate.template;
         }
         else {
           // Check if it's a product name

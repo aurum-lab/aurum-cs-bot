@@ -7,7 +7,19 @@ import makeWASocket, {
 import { Boom } from '@hapi/boom';
 import qrcode from 'qrcode-terminal';
 import config from './config.js';
-import { chatWithAI, checkOllamaConnection } from './ai.js';
+
+// AI module - optional
+let chatWithAI, checkOllamaConnection;
+try {
+  const aiModule = await import('./ai.js');
+  chatWithAI = aiModule.chatWithAI;
+  checkOllamaConnection = aiModule.checkOllamaConnection;
+} catch (error) {
+  console.warn('⚠️  AI module tidak bisa dimuat:', error.message);
+  // Fallback functions
+  chatWithAI = async (msg) => 'Maaf, AI tidak tersedia. Ketik *menu* untuk lihat daftar produk.';
+  checkOllamaConnection = async () => ({ configured: false, connected: false });
+}
 import {
   getAllProducts,
   getProductById,

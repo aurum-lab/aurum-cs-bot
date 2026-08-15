@@ -80,49 +80,58 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/restore - Restore from backup
-router.post('/', upload.single('backup'), (req, res) => {
+router.post('/', upload.single('backup'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'File backup tidak ditemukan' });
     }
     
+    console.log('[Restore] File received:', req.file.originalname, req.file.size, 'bytes');
+    
     const tempDir = join(TEMP_DIR, `aurum-restore-${Date.now()}`);
+    mkdirSync(tempDir, { recursive: true });
     
     // Extract archive
-    execSync(`mkdir -p "${tempDir}" && tar -xzf "${req.file.path}" -C "${tempDir}"`);
+    execSync(`tar -xzf "${req.file.path}" -C "${tempDir}"`);
     
     // Find backup folder
-    const folders = execSync(`ls "${tempDir}"`).toString().trim().split('\n');
-    const backupFolder = folders[0];
+    const items = execSync(`ls "${tempDir}"`).toString().trim().split('\n');
+    const backupFolder = items[0];
     
     if (!backupFolder) {
-      throw new Error('Invalid backup file');
+      throw new Error('Invalid backup file - no folder found');
     }
+    
+    console.log('[Restore] Found folder:', backupFolder);
     
     const backupPath = join(tempDir, backupFolder);
     
     // Restore database
     const dbFile = join(backupPath, 'toko_roti.db');
     if (existsSync(dbFile)) {
-      execSync(`mkdir -p "${DATA_DIR}" && cp "${dbFile}" "${DATA_DIR}/"`);
+      execSync(`cp "${dbFile}" "${DATA_DIR}/"`);
+      console.log('[Restore] Database restored');
     }
     
     // Restore templates
     const templatesFile = join(backupPath, 'templates.json');
     if (existsSync(templatesFile)) {
-      execSync(`mkdir -p "${DATA_DIR}" && cp "${templatesFile}" "${DATA_DIR}/"`);
+      execSync(`cp "${templatesFile}" "${DATA_DIR}/"`);
+      console.log('[Restore] Templates restored');
     }
     
     // Restore config
     const configFile = join(backupPath, 'config.js');
     if (existsSync(configFile)) {
       execSync(`cp "${configFile}" "${join(__dirname, '../../')}"`);
+      console.log('[Restore] Config restored');
     }
     
     // Restore WhatsApp session
     const sessionFolder = join(backupPath, 'whatsapp-session');
     if (existsSync(sessionFolder)) {
-      execSync(`mkdir -p "${DATA_DIR}" && rm -rf "${join(DATA_DIR, 'whatsapp-session')}" && cp -r "${sessionFolder}" "${DATA_DIR}/"`);
+      execSync(`rm -rf "${join(DATA_DIR, 'whatsapp-session')}" && cp -r "${sessionFolder}" "${DATA_DIR}/"`);
+      console.log('[Restore] WhatsApp session restored');
     }
     
     // Cleanup
@@ -131,8 +140,8 @@ router.post('/', upload.single('backup'), (req, res) => {
     res.json({ message: 'Restore berhasil! Restart bot untuk menerapkan.' });
     
   } catch (error) {
-    console.error('Restore error:', error);
-    res.status(500).json({ error: 'Gagal restore backup' });
+    console.error('[Restore] Error:', error.message);
+    res.status(500).json({ error: 'Gagal restore: ' + error.message });
   }
 });
 

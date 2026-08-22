@@ -20,6 +20,7 @@ const defaultSettings = {
 
 // Get settings
 router.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   if (existsSync(SETTINGS_FILE)) {
     const data = readFileSync(SETTINGS_FILE, 'utf8');
     res.json(JSON.parse(data));

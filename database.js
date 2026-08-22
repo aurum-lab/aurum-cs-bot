@@ -11,10 +11,11 @@ const dbPath = config.database.path;
 
 // Initialize database
 let db;
+let isInitialized = false;
 
 export async function initDatabase() {
   const SQL = await initSqlJs();
-  
+
   if (existsSync(dbPath)) {
     const fileBuffer = readFileSync(dbPath);
     db = new SQL.Database(fileBuffer);
@@ -51,7 +52,8 @@ export async function initDatabase() {
 
   // Save database
   saveDatabase();
-  
+  isInitialized = true;
+
   return db;
 }
 
@@ -63,12 +65,57 @@ export function saveDatabase() {
   }
 }
 
+export async function reloadDatabase() {
+  // Save current state first (safety)
+  if (db) {
+    saveDatabase();
+    db.close();
+    db = null;
+  }
+
+  // Re-initialize from file
+  const SQL = await initSqlJs();
+
+  if (existsSync(dbPath)) {
+    const fileBuffer = readFileSync(dbPath);
+    db = new SQL.Database(fileBuffer);
+    isInitialized = true;
+    console.log('[Database] Reloaded from file:', dbPath);
+    return db;
+  } else {
+    console.warn('[Database] File not found, creating new:', dbPath);
+    db = new SQL.Database();
+    isInitialized = true;
+    return db;
+  }
+}
+
+export function closeDatabase() {
+  if (db) {
+    saveDatabase();
+    db.close();
+    db = null;
+    isInitialized = false;
+    console.log('[Database] Closed and saved');
+  }
+}
+
 export function getDb() {
+  if (!db) {
+    throw new Error('Database not initialized. Call initDatabase() first.');
+  }
   return db;
+}
+
+export function isDbInitialized() {
+  return isInitialized && db !== null;
 }
 
 export default {
   initDatabase,
   saveDatabase,
-  getDb
+  reloadDatabase,
+  closeDatabase,
+  getDb,
+  isDbInitialized
 };

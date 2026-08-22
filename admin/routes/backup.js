@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import multer from 'multer';
 import { saveDatabase, reloadDatabase } from '../../database.js';
+import { reloadTemplates } from '../../templates.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -131,6 +132,10 @@ router.post('/', upload.single('backup'), async (req, res) => {
     if (existsSync(templatesFile)) {
       execSync(`cp "${templatesFile}" "${DATA_DIR}/"`);
       console.log('[Restore] Templates restored');
+    
+    // Reload templates cache
+    reloadTemplates();
+    console.log('[Restore] Templates cache reloaded');
     }
 
     // Restore config

@@ -26,12 +26,60 @@ import {
   saveConversation,
   getConversationHistory
 } from './products.js';
-import { initDatabase } from './database.js';
+import { initDatabase, saveDatabase, reloadDatabase, closeDatabase } from './database.js';
 import { getTemplates, detectTag, getTemplateByTag } from './templates.js';
 import { mkdirSync, existsSync } from 'fs';
 
 // Ensure session directory exists
 mkdirSync(config.whatsapp.sessionDir, { recursive: true });
+
+// Graceful shutdown handlers
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(`\n🛑 Received ${signal}. Saving database...`);
+
+  try {
+    saveDatabase();
+    console.log('✅ Database saved');
+
+    closeDatabase();
+    console.log('✅ Database closed');
+  } catch (err) {
+    console.error('❌ Error during shutdown:', err.message);
+  }
+
+  console.log('👋 Goodbye!');
+  process.exit(0);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+// Periodic database auto-save (every 5 minutes)
+setInterval(() => {
+  try {
+    saveDatabase();
+    console.log('[AutoSave] Database saved to disk');
+  } catch (err) {
+    console.error('[AutoSave] Failed:', err.message);
+  }
+}, 5 * 60 * 1000);
+
+// Check for backup request flag (set by backup.sh)
+setInterval(() => {
+  if (existsSync('./data/.backup-requested')) {
+    try {
+      saveDatabase();
+      console.log('[Backup] Database saved for backup request');
+    } catch (err) {
+      console.error('[Backup] Save failed:', err.message);
+    }
+  }
+}, 5000);
 
 // Generate menu text
 function generateMenu() {
@@ -58,7 +106,7 @@ function generateMenu() {
 // Start bot
 async function startBot() {
   await initDatabase();
-  
+
   const { state, saveCreds } = await useMultiFileAuthState(config.whatsapp.sessionDir);
   const { version } = await fetchLatestBaileysVersion();
 
@@ -75,25 +123,25 @@ async function startBot() {
   // QR Code
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect, qr } = update;
-    
+
     if (qr) {
       console.log('\nScan QR Code ini dengan WhatsApp:\n');
       qrcode.generate(qr, { small: true });
     }
-    
+
     if (connection === 'close') {
       const shouldReconnect = (lastDisconnect.error instanceof Boom)
         ? lastDisconnect.error.output?.statusCode !== DisconnectReason.loggedOut
         : true;
-      
+
       console.log('Connection closed:', lastDisconnect.error, 'Reconnecting:', shouldReconnect);
-      
+
       if (shouldReconnect) {
         startBot();
       }
     } else if (connection === 'open') {
       console.log('✅ WhatsApp Bot Ready!');
-      
+
       // Check Ollama (optional)
       checkOllamaConnection().then(status => {
         if (status.configured === false) {
@@ -117,36 +165,36 @@ async function startBot() {
   // Handle messages
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify') return;
-    
+
     // Get templates
     const templates = getTemplates();
-    
+
     for (const message of messages) {
       if (message.fromMe) continue;
       if (!message.message) continue;
-      
+
       const phone = message.key.remoteJid;
       const text = message.message.conversation || 
                    message.message.extendedTextMessage?.text || '';
-      
+
       if (!text) continue;
-      
+
       const contactName = message.pushName || 'Unknown';
       const textLower = text.toLowerCase().trim();
-      
+
       console.log(`[${new Date().toISOString()}] ${contactName}: ${text}`);
-      
+
       try {
         let response = '';
-        
+
         // Check if first message from this user
         const history = getConversationHistory(phone, 1);
         const isFirstMessage = history.length === 0;
-        
+
         // Deteksi tag dari pesan
         const detectedTag = detectTag(text);
         const tagTemplate = getTemplateByTag(detectedTag);
-        
+
         // Command handling
         if (textLower === 'menu' || textLower === 'halo' || textLower === 'hi') {
           if (isFirstMessage && (textLower === 'halo' || textLower === 'hi')) {
@@ -180,7 +228,7 @@ async function startBot() {
             p.name.toLowerCase() === textLower || 
             p.name.toLowerCase().includes(textLower)
           );
-          
+
           if (product) {
             // Send product image if available
             if (product.image_url) {
@@ -209,33 +257,33 @@ async function startBot() {
                 { role: 'user', content: h.message },
                 { role: 'assistant', content: h.response }
               ]);
-              
+
               response = await chatWithAI(text, conversationHistory);
             }
           }
         }
-        
+
         // Send response if not empty
         if (response) {
           await sock.sendMessage(phone, { text: response });
         }
-        
+
         // Save conversation
         saveConversation(phone, contactName, text, response, 1);
-        
+
         // Forward to admin CS
         const forwardMsg = `💬 *INQUIRY*\n\n` +
           `Dari: ${contactName}\n` +
           `No: ${phone}\n` +
           `Pesan: ${text}\n\n` +
           `Balas pesan ini untuk follow up.`;
-        
+
         try {
           await sock.sendMessage(config.bot.adminNumber, { text: forwardMsg });
         } catch (err) {
           console.log('Failed to forward to admin:', err.message);
         }
-        
+
       } catch (error) {
         console.error('Error handling message:', error);
         await sock.sendMessage(phone, { 

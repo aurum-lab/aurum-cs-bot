@@ -44,6 +44,7 @@ const router = Router();
 
 // Get all products
 router.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const db = getDb();
   const results = db.exec('SELECT * FROM products ORDER BY id DESC');
   if (results.length === 0) return res.json([]);
@@ -65,6 +66,7 @@ router.get('/', (req, res) => {
 
 // Get product by ID
 router.get('/:id', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const db = getDb();
   const results = db.exec('SELECT * FROM products WHERE id = ?', [req.params.id]);
   if (results.length === 0 || results[0].values.length === 0) {

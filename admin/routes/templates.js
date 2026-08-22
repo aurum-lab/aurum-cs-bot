@@ -63,6 +63,7 @@ function writeTemplates(templates) {
 
 // GET / - Ambil semua templates (termasuk tags)
 router.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const templates = readTemplates();
   res.json(templates);
 });
@@ -79,12 +80,14 @@ router.put('/', (req, res) => {
 
 // GET /tags - Ambil semua tag templates
 router.get('/tags', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const templates = readTemplates();
   res.json(templates.tags || {});
 });
 
 // GET /tags/:tag - Ambil template by tag
 router.get('/tags/:tag', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const templates = readTemplates();
   const tag = req.params.tag.startsWith('#') ? req.params.tag : `#${req.params.tag}`;
   
